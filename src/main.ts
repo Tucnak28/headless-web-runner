@@ -1,8 +1,7 @@
-// src/main.ts
 import express, { Request, Response } from 'express';
 import puppeteer, { LaunchOptions } from 'puppeteer';
 import type { CDPSession, Page, Frame } from 'puppeteer';
-import { waitForGameFrame, clickBetMinus, clickSpin } from './synot';
+import { waitForGameFrame, clickBetMinus, clickSpin, wait } from './synot';
 
 
 const app = express();
@@ -13,32 +12,58 @@ let session: CDPSession;
 let page: Page;
 let windowId: number;
 let fakeMaximize = true;
+let performBoolean = false;
 
 
 export async function performGameActions(page: Page) {
-    // 1. Get the game iframe
-    const frame = await waitForGameFrame(page);
-  
-    // 2. Click Bet Minus 10 times
-    await clickBetMinus(frame, 10);
-  
-    // 3. Click Spin button
-    await clickSpin(frame);
-  
-    console.log('✅ Game actions completed inside iframe.');
+    while(performBoolean) {
+        // 1. Get the game iframe
+        const frame = await waitForGameFrame(page);
+
+        await wait(90_000);
+    
+        // 2. Click Bet Minus 20 times
+        await clickBetMinus(frame, 20);
+    
+        // 3. Click Spin button
+        await clickSpin(frame);
+
+        await wait(90_000);
+    
+        console.log('✅ Game actions completed inside iframe.');
+    }
 }
   
   
 
 const updateWindowState = async () => {
-  if (!session || !windowId) return;
-  const state = fakeMaximize ? 'normal' : 'minimized';
-  await session.send('Browser.setWindowBounds', {
-    windowId,
-    bounds: { windowState: state }
-  });
-  console.log(`Window set to: ${state}`);
-};
+    if (!session || !windowId) return;
+  
+    if (fakeMaximize) {
+      // Move the window far off-screen
+      await session.send('Browser.setWindowBounds', {
+        windowId,
+        bounds: {
+          windowState: 'normal',
+          left: -2000,
+          top: 0
+        }
+      });
+      console.log('Window moved out of bounds.');
+    } else {
+      // Move it back to visible screen
+      await session.send('Browser.setWindowBounds', {
+        windowId,
+        bounds: {
+          windowState: 'normal',
+          left: 100,
+          top: 100
+        }
+      });
+      console.log('Window moved back in bounds.');
+    }
+  };
+  
 
 app.post('/toggle_Maximize', async (req: Request, res: Response) => {
   fakeMaximize = !fakeMaximize;
@@ -47,12 +72,9 @@ app.post('/toggle_Maximize', async (req: Request, res: Response) => {
   res.sendStatus(200);
 });
 
-app.post('/clicked', (req: Request, res: Response) => {
-  console.log('Clicked element data:', req.body);
-  res.sendStatus(200);
-});
 
 app.post('/perform_a_spin', (req: Request, res: Response) => {
+    performBoolean = !performBoolean;
     performGameActions(page);
     res.sendStatus(200);
 });
@@ -91,7 +113,7 @@ const server = app.listen(3000, () => {
   });
 
   
-  await page.goto('https://forbescasino.cz');
+  await page.goto('https://herna.gapagroup.cz/');
 
   session = await page.createCDPSession();
   const info = await session.send('Browser.getWindowForTarget');
