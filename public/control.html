@@ -3,6 +3,8 @@
 <body>
   <button id="toggle_Maximize">Toggle Fake Maximize</button>
   <button id="toggle_clicker">Set Autoclicker by Element</button>
+  <button id="perform_a_spin">Perform a spin</button>
+
   <script>
     document.getElementById("toggle_Maximize").onclick = async () => {
       await fetch('/toggle_Maximize', { method: 'POST' });
@@ -11,6 +13,11 @@
     document.getElementById("toggle_clicker").onclick = async () => {
       await fetch('/toggle_clicker', { method: 'POST' });
     };
+
+    document.getElementById("perform_a_spin").onclick = async () => {
+      await fetch('/perform_a_spin', { method: 'POST' });
+    };
+
   </script>
 </body>
 </html>
