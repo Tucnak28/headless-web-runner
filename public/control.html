@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <button id="toggle">Toggle Fake Maximize</button>
+
+  <script>
+    document.getElementById("toggle").onclick = async () => {
+      await fetch('/toggle', { method: 'POST' });
+    };
+  </script>
+</body>
+</html>
