@@ -1,11 +1,15 @@
 <!DOCTYPE html>
 <html>
 <body>
-  <button id="toggle">Toggle Fake Maximize</button>
-
+  <button id="toggle_Maximize">Toggle Fake Maximize</button>
+  <button id="toggle_clicker">Set Autoclicker by Element</button>
   <script>
-    document.getElementById("toggle").onclick = async () => {
-      await fetch('/toggle', { method: 'POST' });
+    document.getElementById("toggle_Maximize").onclick = async () => {
+      await fetch('/toggle_Maximize', { method: 'POST' });
+    };
+
+    document.getElementById("toggle_clicker").onclick = async () => {
+      await fetch('/toggle_clicker', { method: 'POST' });
     };
   </script>
 </body>
