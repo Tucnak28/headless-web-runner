@@ -1,4 +1,4 @@
-import type { Frame, Page } from 'puppeteer';
+import type { Frame, Page, ElementHandle } from 'puppeteer';
 
 export const wait = (ms: number) => new Promise(res => setTimeout(res, ms));
 
@@ -17,8 +17,7 @@ export function pickRandomSynotGame() {
 'https://casino.synottip.cz/game/run/e0d2a12a-a95e-48d5-8141-99a13bb8a66d',
 'https://casino.synottip.cz/game/run/487e3b88-ffeb-42ac-a356-356260e300e9',
 'https://casino.synottip.cz/game/run/c2b1a20b-632b-46b5-b7c6-c089deae5e30',
-'https://casino.synottip.cz/game/run/48fa991c-b6b0-478a-a2b0-788b7326905f',
-'https://casino.synottip.cz/game/run/e9854e45-7e47-42b6-a7a5-0fca975b9245'
+'https://casino.synottip.cz/game/run/48fa991c-b6b0-478a-a2b0-788b7326905f'
   ];
 
   const randomIndex = Math.floor(Math.random() * games.length);
@@ -40,7 +39,7 @@ export async function waitForGameFrame(page: Page): Promise<Frame> {
 
 export async function clickBetMinus(frame: Frame, times: number = 10) {
   try {
-  await frame.waitForSelector('#betMinus', { visible: true, timeout: 10000 });
+  await frame.waitForSelector('#betMinus', { timeout: 10000 });
 
   for (let i = 0; i < times; i++) {
     await frame.click('#betMinus');
@@ -62,7 +61,6 @@ export async function clickSpin(frame: Frame) {
     }
 
     const spinButton = await frame.waitForSelector(spinSelector, {
-      visible: true,
       timeout: 10000,
     });
 
@@ -98,4 +96,31 @@ export async function findSpinButtonSelector(frame: Frame): Promise<string | nul
   console.warn('⚠️ No known spin button selector matched.');
   return null;
 }
+
+
+export async function clickOkButton(frame: Frame) {
+  await frame.evaluate(() => {
+    // Najdi root aplikace
+    const app = document.querySelector('#peakIconHolder > peak-app');
+    if (!app || !app.shadowRoot) return;
+
+    const notificationsManager = app.shadowRoot.querySelector('#notificationsManager');
+    if (!notificationsManager || !notificationsManager.shadowRoot) return;
+
+    const consentDialog = notificationsManager.shadowRoot.querySelector('peak-dialog > peak-notification-consent');
+    if (!consentDialog || !consentDialog.shadowRoot) return;
+
+    const okButton = consentDialog.shadowRoot.querySelector('div > div.carousel-wrapper > div > peak-button:nth-child(2)');
+    if (okButton instanceof HTMLElement) {
+      okButton.click();
+    }
+  });
+}
+
+
+
+
+
+
+
 
