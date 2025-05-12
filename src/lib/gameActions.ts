@@ -1,4 +1,4 @@
-import type { Frame, Page, ElementHandle } from 'puppeteer';
+import type { Frame, Page } from 'puppeteer';
 
 export const wait = (ms: number) => new Promise(res => setTimeout(res, ms));
 
@@ -116,11 +116,3 @@ export async function clickOkButton(frame: Frame) {
     }
   });
 }
-
-
-
-
-
-
-
-
