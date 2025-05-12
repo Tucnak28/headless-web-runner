@@ -100,7 +100,7 @@ export async function findSpinButtonSelector(frame: Frame): Promise<string | nul
 
 export async function clickOkButton(frame: Frame) {
   await frame.evaluate(() => {
-    // Najdi root aplikace
+
     const app = document.querySelector('#peakIconHolder > peak-app');
     if (!app || !app.shadowRoot) return;
 

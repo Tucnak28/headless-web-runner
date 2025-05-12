@@ -48,4 +48,19 @@ router.post("/toggle_window/:id", async (req: Request, res: Response): Promise<v
   res.send(`🪟 Window toggled for bot "${id}"`);
 });
 
+// Toggle Ultra Eco mode
+router.post("/toggle_Eco/:id", async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const bot = botManager.getBot(id);
+
+  if (!bot) {
+    res.status(404).send(`❌ Bot "${id}" not found`);
+    return;
+  }
+
+  await bot.toggleUltraEcoMode();
+
+  res.send(`🪟 Eco Mode toggled for bot "${id}"`);
+});
+
 export default router;
