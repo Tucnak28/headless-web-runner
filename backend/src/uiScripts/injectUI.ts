@@ -21,7 +21,7 @@ export const injectControlPanelScript = (() => {
 
       document.body.appendChild(panel);
 
-      const socket = new WebSocket("ws://localhost:3000");
+      const socket = new WebSocket("ws://localhost:3001");
       const status = document.getElementById("wsStatus");
 
       if(!status) return;

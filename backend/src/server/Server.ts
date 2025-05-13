@@ -11,8 +11,8 @@ export function startServer() {
   app.use(express.json());
   app.use("/api", routes);
 
-  const server = app.listen(3000, () =>
-    console.log("🌐 Server running at http://localhost:3000")
+  const server = app.listen(3001, () =>
+    console.log("🌐 Server running at http://localhost:3001")
   );
 
   const wss = new WebSocketServer({ server });
