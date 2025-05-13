@@ -1,4 +1,5 @@
 import type { Frame, Page } from 'puppeteer';
+import { SynotBot } from '../bots/SynotBot';
 
 export const wait = (ms: number) => new Promise(res => setTimeout(res, ms));
 
@@ -24,20 +25,23 @@ export function pickRandomSynotGame() {
   return games[randomIndex];
 }
 
-export async function waitForGameFrame(page: Page): Promise<Frame> {
+export async function waitForGameFrame(page: Page, bot: SynotBot): Promise<Frame> {
   await page.goto(pickRandomSynotGame(), {
     waitUntil: 'networkidle2'
   });
 
   const iframeElement = await page.waitForSelector('iframe');
   const frame = await iframeElement?.contentFrame();
-  if (!frame) throw new Error('❌ Could not access game iframe');
+  if (!frame) {
+    bot.addLog('❌ Could not access game iframe');
+    throw new Error('❌ Could not access game iframe');
+  }
 
-  console.log('✅ Game iframe loaded');
+  bot.addLog('✅ Game iframe loaded');
   return frame;
 }
 
-export async function clickBetMinus(frame: Frame, times: number = 10) {
+export async function clickBetMinus(frame: Frame, times: number = 10, bot: SynotBot) {
   try {
   await frame.waitForSelector('#betMinus', { timeout: 10000 });
 
@@ -46,17 +50,17 @@ export async function clickBetMinus(frame: Frame, times: number = 10) {
     await wait(50);
   }
 
-  console.log(`✅ Clicked #betMinus ${times} times`);
+    bot.addLog(`✅ Clicked #betMinus ${times} times`);
   } catch (err: any) {
-  console.error('❌ Failed to click Bet Minus button:', err.message);
+    bot.addLog('❌ Failed to click Bet Minus button:' + err.message);
   }
 }
 
-export async function clickSpin(frame: Frame) {
+export async function clickSpin(frame: Frame, bot: SynotBot) {
   try {
     const spinSelector = await findSpinButtonSelector(frame);
     if (!spinSelector) {
-      console.warn('⚠️ Spin button selector not found.');
+      bot.addLog('⚠️ Spin button selector not found.');
       return;
     }
 
@@ -65,14 +69,15 @@ export async function clickSpin(frame: Frame) {
     });
 
     if (!spinButton) {
-      console.warn('⚠️ Spin button not visible.');
+      bot.addLog('⚠️ Spin button not visible.');
       return;
     }
 
     await spinButton.click();
-    console.log('✅ Spin button clicked');
+    bot.addLog('✅ Spin button clicked');
+
   } catch (err: any) {
-    console.error('❌ Failed to click spin button:', err.message);
+    bot.addLog('❌ Failed to click spin button:' + err.message);
   }
 }
 
@@ -88,12 +93,12 @@ export async function findSpinButtonSelector(frame: Frame): Promise<string | nul
   for (const selector of selectors) {
     const element = await frame.$(selector);
     if (element) {
-      console.log(`✅ Found spin button using selector: ${selector}`);
+      //console.log(`✅ Found spin button using selector: ${selector}`);
       return selector;
     }
   }
 
-  console.warn('⚠️ No known spin button selector matched.');
+  //console.warn('⚠️ No known spin button selector matched.');
   return null;
 }
 

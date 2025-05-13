@@ -2,11 +2,20 @@ import express from "express";
 import { WebSocketServer } from "ws";
 import routes from "./routes";
 import { BotManager } from "../bots/BotManager";
+import cors from 'cors';
+
+
 
 export const botManager = new BotManager();
 
 export function startServer() {
   const app = express();
+
+  app.use(cors({
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST'],
+  }));
+
   app.use(express.static("public"));
   app.use(express.json());
   app.use("/api", routes);

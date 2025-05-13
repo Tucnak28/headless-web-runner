@@ -3,14 +3,19 @@ import { clickBetMinus, clickSpin, waitForGameFrame, wait } from "../lib/gameAct
 import puppeteer from "puppeteer";
 import type { Browser, Page, CDPSession } from "puppeteer";
 
+
+
+
 export class SynotBot {
   private browser!: Browser;
   private page!: Page;
   private session!: CDPSession;
   private windowId!: number;
+  
   private performBoolean = false;
   private fakeMaximize = false;
   private ultraEcoMode = false;
+  private log: string[] = [];
 
   constructor(public id: string) {}
 
@@ -43,8 +48,29 @@ export class SynotBot {
     });
 
 
-    await this.injectControlUI();
+    //await this.injectControlUI();
   }
+
+  public addLog(message: string) {
+    const now = new Date();
+
+  const timestamp = `[${now.getDate().toString().padStart(2, '0')}.${(now.getMonth() + 1)
+  .toString()
+  .padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}]`;
+    
+    this.log.push(`[${timestamp}] ${message}`);
+
+    // keep only last 150 entries
+    if (this.log.length > 150) {
+      this.log = this.log.slice(-150);
+    }
+  }
+
+  public getLog(): string[] {
+    return this.log;
+  }
+
+
 
   private async injectControlUI() {
     await this.page.evaluateOnNewDocument(injectControlPanelScript.toString()); // from injectUI.ts
@@ -52,14 +78,17 @@ export class SynotBot {
 
   toggleSpin() {
     this.performBoolean = !this.performBoolean;
+
     if (this.performBoolean) this.performActionsLoop();
+    this.addLog(this.performBoolean ? "🔁 Auto-spin started" : "🛑 Auto-spin stopped");
   }
+
 
   private async performActionsLoop() {
     while (this.performBoolean) {
-      const frame = await waitForGameFrame(this.page);
-      await clickBetMinus(frame, 20);
-      await clickSpin(frame);
+      const frame = await waitForGameFrame(this.page, this);
+      await clickBetMinus(frame, 20, this);
+      await clickSpin(frame, this);
       await wait(90000);
     }
   }
@@ -71,6 +100,8 @@ export class SynotBot {
       windowId: this.windowId,
       bounds: this.fakeMaximize ? { left: -20000, top: 0 } : { left: 100, top: 100 },
     });
+
+    this.addLog(this.fakeMaximize ? "🪟 Window hidden" : "🪟 Window restored");
   }
 
 async toggleUltraEcoMode() {
@@ -139,7 +170,7 @@ async toggleUltraEcoMode() {
       HTMLCanvasElement.prototype.getContext = () => ({ clearRect: noop, fillRect: noop } as any);
     });
 
-    console.log("🛑 UltraEcoMode: EXTREME ACTIVATED");
+    this.addLog("🛑 UltraEcoMode: EXTREME ACTIVATED");
 
   } else {
     // Restore everything
@@ -167,7 +198,7 @@ async toggleUltraEcoMode() {
       { name: "prefers-reduced-motion", value: "no-preference" }
     ]);
 
-    console.log("🌱 UltraEcoMode: OFF");
+    this.addLog("🌱 UltraEcoMode: OFF");
   }
 }
 

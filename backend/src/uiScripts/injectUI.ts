@@ -76,7 +76,7 @@ export const injectControlPanelScript = (() => {
       });
     };
 
-    window.addEventListener("DOMContentLoaded", () => {
+    /*window.addEventListener("DOMContentLoaded", () => {
       injectControlPanel();
       setInterval(() => {
         if (location.href !== lastUrl) {
@@ -84,6 +84,6 @@ export const injectControlPanelScript = (() => {
           injectControlPanel();
         }
       }, 500);
-    });
+    });*/
   });
   

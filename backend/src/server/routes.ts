@@ -34,6 +34,20 @@ router.post("/toggle_spin/:id", (req: Request, res: Response): void => {
   res.send(`🔁 Spin toggled for bot "${id}"`);
 });
 
+// Retrieve Log
+router.post("/retrieve_log/:id", (req: Request, res: Response): void => {
+  const { id } = req.params;
+  const bot = botManager.getBot(id);
+
+  if (!bot) {
+    res.status(404).send(`❌ Bot "${id}" not found`);
+    return;
+  }
+
+  res.json({ log: bot.getLog() });
+
+});
+
 // Toggle window state
 router.post("/toggle_window/:id", async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
