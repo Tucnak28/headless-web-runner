@@ -1,4 +1,4 @@
-import {injectControlPanelScript} from "../frontend/injectUI";
+import {injectControlPanelScript} from "../uiScripts/injectUI";
 import { clickBetMinus, clickSpin, waitForGameFrame, wait } from "../lib/gameActions";
 import puppeteer from "puppeteer";
 import type { Browser, Page, CDPSession } from "puppeteer";
