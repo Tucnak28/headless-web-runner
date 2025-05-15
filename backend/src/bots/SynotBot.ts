@@ -19,8 +19,19 @@ export class SynotBot {
   private log: string[] = [];
   private username = "";
   private password = "";
+  private delay = 0;
   private retries = 0;
   private maxRetries = 5;
+
+  private delayWeights = {
+    nav: 2,
+    postLogin: 1,
+    settle1: 1,
+    settle2: 1,
+    settle3: 1,
+    spin: 3,
+  };
+
 
   constructor(public id: string) {}
 
@@ -110,6 +121,11 @@ export class SynotBot {
     this.addLog(`🪪 Login info set for bot "${this.id}"`);
   }
 
+  public setDelay = async (delay: number) => {
+    this.delay = delay;
+    this.addLog(`⏱️ Delay set to ${this.delay}s for bot "${this.id}"`);
+  }
+
   private async injectControlUI() {
     await this.page.evaluateOnNewDocument(injectControlPanelScript.toString()); // from injectUI.ts
   }
@@ -121,43 +137,55 @@ export class SynotBot {
     this.addLog(this.performBoolean ? "🔁 Auto-spin started" : "🛑 Auto-spin stopped");
   }
 
+  private async dynamicWait(label: keyof typeof this.delayWeights) {
+    const totalWeight = Object.values(this.delayWeights).reduce((a, b) => a + b, 0);
+    const unit = (this.delay ?? 14) * 1000 / totalWeight;
 
+    const waitTime = unit * this.delayWeights[label];
+    await wait(waitTime);
+  }
 
 
 
   private async performActionsLoop() {
+    if (this.username === "" || this.password === "") return;
 
-    if(this.username === "" || this.password === "") return;
-
-    while (this.performBoolean && this.retries < this.maxRetries) {
+    while (this.performBoolean) {
       try {
         await navigateToGamePage(this.page, this);
-
-        await wait(1000);
+        await this.dynamicWait('nav');
 
         await tryLogin(this.page, this, this.username, this.password);
+        await this.dynamicWait('postLogin');
 
-        await wait(1000);
-        
         const frame = await getGameIframe(this.page, this);
-
-        await wait(1000);
+        await this.dynamicWait('settle1');
 
         if (this.ultraEcoMode) await this.EcoMode();
+        await this.dynamicWait('settle2');
 
-        await wait(1000); // let it load and settle
         await clickBetMinus(frame, this.page, 20, this);
-        await clickSpin(frame, this);
-        await wait(5000); // wait after spin
+        await this.dynamicWait('settle3');
 
-        this.retries = 0; // reset on success
+        await clickSpin(frame, this);
+        await this.dynamicWait('spin');
+
+        this.retries = 0;
       } catch (err: any) {
-        this.retries++;
-        this.addLog(`❌ Error during spin loop: ${err.message}. Retrying with another game...`);
-        await wait(2000);
-      }
+          this.retries++;
+          this.addLog(`❌ Error during spin loop: ${err.message}. Retrying with another game...`);
+
+          if (this.retries >= this.maxRetries) {
+            this.addLog("⚠️ Too many retries, waiting 10 minutes...");
+            await wait(600_000);
+            this.retries = 0;
+          } else {
+            await wait(2000);
+          }
+        }
     }
   }
+
 
 
   async toggleWindowState() {

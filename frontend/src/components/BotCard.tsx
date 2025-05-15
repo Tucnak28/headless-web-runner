@@ -9,6 +9,7 @@ interface BotCardProps {
 export default function BotCard({ id, onKill }: BotCardProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [delay, setDelay] = useState('');
   const [log, setLog] = useState<string[]>([]);
   const hasStarted = useRef(false);
 
@@ -70,14 +71,14 @@ export default function BotCard({ id, onKill }: BotCardProps) {
     }
   };
 
-  const setLogin = async () => {
+  const applySettings = async () => {
     try {
-      const res = await fetch(`http://localhost:3001/api/set_login/${id}`, {
+      const res = await fetch(`http://localhost:3001/api/apply_settings/${id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, delay }),
       });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -125,10 +126,27 @@ export default function BotCard({ id, onKill }: BotCardProps) {
         className="w-full border rounded px-4 py-2"
       />
 
+      <div className="flex justify-end">
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-700">Spin time (seconds)</label>
+          <input
+            type="number"
+            placeholder="e.g. 14"
+            value={delay}
+            defaultValue={30}
+            min={10}
+            onChange={(e) => setDelay(e.target.value)}
+            className="border rounded px-3 py-2 w-24"
+          />
+        </div>
+      </div>
+
+
+
 
         {/* Controls */}
         <div className="flex flex-wrap justify-center gap-4">
-          <button className="btn" onClick={setLogin}>Set Login</button>
+          <button className="btn" onClick={applySettings}>Apply Settings</button>
           <button className="btn" onClick={toggleSpin}>Toggle spin</button>
           <button className="btn" onClick={toggleWindow}>Out of Bounds</button>
         </div>
@@ -136,8 +154,6 @@ export default function BotCard({ id, onKill }: BotCardProps) {
         {/* Placeholder buttons */}
         <div className="flex flex-wrap justify-center gap-4">
           <button className="btn" onClick={toggleEco}>Eco mode</button>
-          <button className="btn">[Placeholder]</button>
-          <button className="btn">[Placeholder]</button>
         </div>
 
         {/* Logs */}

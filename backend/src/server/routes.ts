@@ -78,7 +78,7 @@ router.post("/toggle_Eco/:id", async (req: Request, res: Response): Promise<void
 });
 
 // Set login
-router.post("/set_login/:id", async (req: Request, res: Response): Promise<void> => {
+router.post("/apply_settings/:id", async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const bot = botManager.getBot(id);
 
@@ -87,9 +87,10 @@ router.post("/set_login/:id", async (req: Request, res: Response): Promise<void>
     return;
   }
 
-  const { username, password } = req.body;
+  const { username, password, delay } = req.body;
 
   bot.setLoginInfo(username, password);
+  bot.setDelay(delay);
 
 
   res.send(`🪟 Set login info of "${id}"`);

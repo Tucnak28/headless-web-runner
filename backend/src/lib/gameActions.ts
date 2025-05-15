@@ -42,10 +42,10 @@ export async function tryLogin(page: Page, bot: SynotBot, username: string, pass
       bot.addLog("✅ Login submitted");
       await wait(3000); // wait for login to complete
     } else {
-      bot.addLog("ℹ️ No login form detected.");
+      //bot.addLog("ℹ️ No login form detected.");
     }
   } catch (err: any) {
-    bot.addLog("❌ Failed to check or fill login form: " + err.message);
+    throw new Error('❌ Failed to check or fill login form');
   }
 }
 
@@ -58,10 +58,9 @@ export async function navigateToGamePage(page: Page, bot: SynotBot): Promise<voi
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
   } catch (err: any) {
     if (err.message.includes('ERR_ABORTED')) {
-      bot.addLog('⚠️ Navigation aborted (expected when changing URLs quickly)');
+      throw new Error('⚠️ Navigation aborted (expected when changing URLs quickly)');
     } else {
-      bot.addLog('❌ Navigation failed: ' + err.message);
-      throw err;
+      throw new Error('❌ Navigation failed');
     }
   }
 }
@@ -72,15 +71,13 @@ export async function getGameIframe(page: Page, bot: SynotBot): Promise<Frame> {
     const frame = await iframeElement?.contentFrame();
 
     if (!frame) {
-      bot.addLog('❌ Could not access game iframe');
       throw new Error('❌ Could not access game iframe');
     }
 
     bot.addLog('✅ Game iframe loaded');
     return frame;
   } catch (err: any) {
-    bot.addLog('❌ Failed to access game iframe: ' + err.message);
-    throw err;
+    throw new Error('❌ Failed to access game iframe: ');
   }
 }
 
@@ -124,8 +121,7 @@ export async function clickSpin(frame: Frame, bot: SynotBot) {
   try {
     const spinSelector = await findSpinButtonSelector(frame);
     if (!spinSelector) {
-      bot.addLog('⚠️ Spin button selector not found.');
-      return;
+      throw new Error('⚠️ Spin button selector not found.');
     }
 
     const spinButton = await frame.waitForSelector(spinSelector, {
@@ -133,15 +129,14 @@ export async function clickSpin(frame: Frame, bot: SynotBot) {
     });
 
     if (!spinButton) {
-      bot.addLog('⚠️ Spin button not visible.');
-      return;
+      throw new Error('⚠️ Spin button not visible.');
     }
 
     await spinButton.click();
     bot.addLog('✅ Spin button clicked');
 
   } catch (err: any) {
-    bot.addLog('❌ Failed to click spin button:' + err.message);
+    throw new Error('❌ Failed to click spin button:' + err.message);
   }
 }
 
@@ -163,7 +158,7 @@ export async function clickBetMinus(frame: Frame, page: Page, times: number = 10
 
     bot.addLog(`✅ Clicked #betMinus ${times} times`);
   } catch (err: any) {
-    bot.addLog('❌ Failed to click Bet Minus button: ' + err.message);
+    throw new Error('❌ Failed to click Bet Minus button: ' + err.message);
   }
 }
 
@@ -185,8 +180,7 @@ export async function findSpinButtonSelector(frame: Frame): Promise<string | nul
     }
   }
 
-  //console.warn('⚠️ No known spin button selector matched.');
-  return null;
+  throw new Error('⚠️ No known spin button selector matched.');
 }
 
 export async function deepQuerySelector(page: Page, selectors: string[]): Promise<string | null> {
