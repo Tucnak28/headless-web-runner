@@ -77,4 +77,22 @@ router.post("/toggle_Eco/:id", async (req: Request, res: Response): Promise<void
   res.send(`🪟 Eco Mode toggled for bot "${id}"`);
 });
 
+// Set login
+router.post("/set_login/:id", async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const bot = botManager.getBot(id);
+
+  if (!bot) {
+    res.status(404).send(`❌ Bot "${id}" not found`);
+    return;
+  }
+
+  const { username, password } = req.body;
+
+  bot.setLoginInfo(username, password);
+
+
+  res.send(`🪟 Set login info of "${id}"`);
+});
+
 export default router;

@@ -25,46 +25,68 @@ export function pickRandomSynotGame() {
   return games[randomIndex];
 }
 
-export async function waitForGameFrame(page: Page, bot: SynotBot): Promise<Frame> {
+export async function tryLogin(page: Page, bot: SynotBot, username: string, password: string) {
+  try {
+    const loginExists = await page.$('input[name="login"]');
+    const passwordExists = await page.$('input[name="password"]');
+
+    if (loginExists && passwordExists) {
+      bot.addLog("🔒 Login form detected. Attempting login...");
+
+      await page.type('input[name="login"]', username, { delay: 50 });
+      await page.type('input[name="password"]', password, { delay: 50 });
+
+      // Attempt to submit the form (press Enter on password field)
+      await page.keyboard.press('Enter');
+
+      bot.addLog("✅ Login submitted");
+      await wait(3000); // wait for login to complete
+    } else {
+      bot.addLog("ℹ️ No login form detected.");
+    }
+  } catch (err: any) {
+    bot.addLog("❌ Failed to check or fill login form: " + err.message);
+  }
+}
+
+
+export async function navigateToGamePage(page: Page, bot: SynotBot): Promise<void> {
   const url = pickRandomSynotGame();
   bot.addLog(`🔀 Navigating to new game: ${url}`);
 
   try {
-
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
   } catch (err: any) {
-
     if (err.message.includes('ERR_ABORTED')) {
-      bot.addLog('⚠️ navigation aborted (expected when changing URLs quickly)');
+      bot.addLog('⚠️ Navigation aborted (expected when changing URLs quickly)');
     } else {
+      bot.addLog('❌ Navigation failed: ' + err.message);
       throw err;
     }
   }
+}
 
-  const iframeHandle = await page.waitForSelector('iframe[data-test-role="game-frame"]', {
-    timeout: 30_000
-  });
+export async function getGameIframe(page: Page, bot: SynotBot): Promise<Frame> {
+  try {
+    const iframeElement = await page.waitForSelector('iframe', { timeout: 10_000 });
+    const frame = await iframeElement?.contentFrame();
 
-  if(!iframeHandle) throw new Error('❌ Url did not change');
+    if (!frame) {
+      bot.addLog('❌ Could not access game iframe');
+      throw new Error('❌ Could not access game iframe');
+    }
 
-  const frame = await iframeHandle.contentFrame();
-  if (!frame) {
-    bot.addLog('❌ Could not access game iframe');
-    throw new Error('Could not access game iframe');
+    bot.addLog('✅ Game iframe loaded');
+    return frame;
+  } catch (err: any) {
+    bot.addLog('❌ Failed to access game iframe: ' + err.message);
+    throw err;
   }
-
-  bot.addLog(`✅ Game iframe is ready (${frame.url()})`);
-  return frame;
 }
 
 
-export async function clickBetMinus(frame: Frame, page: Page, times: number = 10, bot: SynotBot) {
-  try {
-  await frame.waitForSelector('#betMinus', { timeout: 10000 });
 
-
-  await wait(3000);
-
+async function dismissDialog(page: Page) {
   await page.evaluate(() => {
     const findButton = (root: Document | ShadowRoot): HTMLElement | null => {
       const buttons = root.querySelectorAll('peak-button');
@@ -72,7 +94,6 @@ export async function clickBetMinus(frame: Frame, page: Page, times: number = 10
         if (btn.textContent?.trim() === 'OK') return btn as HTMLElement;
       }
 
-      // Search recursively in shadow roots
       for (const el of root.querySelectorAll('*')) {
         const shadow = (el as HTMLElement).shadowRoot;
         if (shadow) {
@@ -80,47 +101,22 @@ export async function clickBetMinus(frame: Frame, page: Page, times: number = 10
           if (found) return found;
         }
       }
-
       return null;
     };
 
     const btn = findButton(document);
     if (btn) btn.click();
   });
+}
 
-  // AAAAAAAAAAAAAAAAA I WILL JUST DELETEEEE ITTT
-  await frame.waitForSelector('#retentionPanelIcons', { timeout: 5000 });
+async function tryRemoveRetentionPanel(frame: Frame, bot: SynotBot) {
+  const removed = await frame.$eval('#retentionPanelIcons', el => {
+    el.remove();
+    return true;
+  }).catch(() => false);
 
-  const removed = await frame.$eval(
-    '#retentionPanelIcons',
-    el => {
-      el.remove();
-      return true;
-    }
-  ).catch(() => false);
-
-  if (removed) {
-    //console.log('✅ #retentionPanelIcons was removed');
-  } else {
+  if (!removed) {
     bot.addLog('ℹ️ #retentionPanelIcons not found or removal failed');
-  }
-
-
-
-
-
-
-
-
-
-  for (let i = 0; i < times; i++) {
-    await frame.click('#betMinus');
-    await wait(50);
-  }
-
-    bot.addLog(`✅ Clicked #betMinus ${times} times`);
-  } catch (err: any) {
-    bot.addLog('❌ Failed to click Bet Minus button:' + err.message);
   }
 }
 
@@ -148,6 +144,29 @@ export async function clickSpin(frame: Frame, bot: SynotBot) {
     bot.addLog('❌ Failed to click spin button:' + err.message);
   }
 }
+
+
+
+export async function clickBetMinus(frame: Frame, page: Page, times: number = 10, bot: SynotBot) {
+  try {
+    await frame.waitForSelector('#betMinus', { timeout: 10000 });
+
+    await wait(3000); // optional: might move this elsewhere if needed
+
+    await dismissDialog(page);
+    await tryRemoveRetentionPanel(frame, bot);
+
+    for (let i = 0; i < times; i++) {
+      await frame.click('#betMinus');
+      await wait(50);
+    }
+
+    bot.addLog(`✅ Clicked #betMinus ${times} times`);
+  } catch (err: any) {
+    bot.addLog('❌ Failed to click Bet Minus button: ' + err.message);
+  }
+}
+
 
 
 

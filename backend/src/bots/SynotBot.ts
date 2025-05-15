@@ -1,5 +1,5 @@
 import {injectControlPanelScript} from "../uiScripts/injectUI";
-import { clickBetMinus, clickSpin, waitForGameFrame, wait } from "../lib/gameActions";
+import { clickBetMinus, clickSpin, navigateToGamePage, getGameIframe, wait, tryLogin } from "../lib/gameActions";
 import puppeteer from "puppeteer";
 import type { Browser, Page, CDPSession } from "puppeteer";
 
@@ -17,29 +17,60 @@ export class SynotBot {
   private fakeMaximize = false;
   private ultraEcoMode = false;
   private log: string[] = [];
+  private username = "";
+  private password = "";
+  private retries = 0;
+  private maxRetries = 5;
 
   constructor(public id: string) {}
 
   async launch() {
-    this.browser = await puppeteer.launch({ headless: false as any, defaultViewport: null, args: [
-        "--mute-audio",
-      "--disable-infobars",
-      "--no-sandbox",
-      "--disable-blink-features=AutomationControlled",
-      "--no-default-browser-check",
-      "--disable-setuid-sandbox",
-      "--disable-features=site-per-process",
-      "--autoplay-policy=no-user-gesture-required",
-      "--disable-background-timer-throttling",
-      "--disable-backgrounding-occluded-windows",
-      "--remote-debugging-port=9222",
-      "--disable-gpu",
-    ] });
+    this.browser = await puppeteer.launch({ headless: 'new' as any, defaultViewport: null, 
+      args: [
+  '--mute-audio',
+  '--no-sandbox',
+  '--disable-gpu',
+  '--disable-infobars',
+  '--disable-dev-shm-usage',
+  '--disable-software-rasterizer',
+  '--disable-accelerated-2d-canvas',
+  '--disable-accelerated-video-decode',
+  '--disable-backgrounding-occluded-windows',
+  '--disable-background-timer-throttling',
+  '--disable-breakpad',
+  '--disable-client-side-phishing-detection',
+  '--disable-default-apps',
+  '--disable-domain-reliability',
+  '--disable-features=site-per-process,TranslateUI,BlinkGenPropertyTrees',
+  '--disable-hang-monitor',
+  '--disable-popup-blocking',
+  '--disable-prompt-on-repost',
+  '--disable-renderer-backgrounding',
+  '--disable-sync',
+  '--force-color-profile=srgb',
+  '--metrics-recording-only',
+  '--no-first-run',
+  '--no-default-browser-check',
+  '--enable-automation',
+  '--password-store=basic',
+  '--use-mock-keychain',
+  '--autoplay-policy=no-user-gesture-required',
+  '--hide-scrollbars',
+  '--disable-extensions',
+  '--disable-component-update',
+] });
     this.page = await this.browser.newPage();
     await this.page.goto("https://www.synottip.cz/", { waitUntil: "networkidle2" });
     this.session = await this.page.createCDPSession();
     const info = await this.session.send("Browser.getWindowForTarget");
     this.windowId = info.windowId;
+
+    await this.page.evaluate(() => {
+      Object.defineProperty(window, 'devicePixelRatio', {
+        get: () => 0.1,
+        configurable: true
+      });
+    });
 
 
     await this.session.send("Browser.setWindowBounds", {
@@ -72,7 +103,12 @@ export class SynotBot {
     return this.log;
   }
 
+  public setLoginInfo = async (username: string, password: string) => {
+    this.username = username;
+    this.password = password;
 
+    this.addLog(`🪪 Login info set for bot "${this.id}"`);
+  }
 
   private async injectControlUI() {
     await this.page.evaluateOnNewDocument(injectControlPanelScript.toString()); // from injectUI.ts
@@ -86,18 +122,43 @@ export class SynotBot {
   }
 
 
+
+
+
   private async performActionsLoop() {
-    while (this.performBoolean) {
-      const frame = await waitForGameFrame(this.page, this);
 
-      if(this.ultraEcoMode) this.EcoMode();
+    if(this.username === "" || this.password === "") return;
 
-      await wait(90000);
-      await clickBetMinus(frame, this.page, 20, this);
-      await clickSpin(frame, this);
-      await wait(90000);
+    while (this.performBoolean && this.retries < this.maxRetries) {
+      try {
+        await navigateToGamePage(this.page, this);
+
+        await wait(1000);
+
+        await tryLogin(this.page, this, this.username, this.password);
+
+        await wait(1000);
+        
+        const frame = await getGameIframe(this.page, this);
+
+        await wait(1000);
+
+        if (this.ultraEcoMode) await this.EcoMode();
+
+        await wait(1000); // let it load and settle
+        await clickBetMinus(frame, this.page, 20, this);
+        await clickSpin(frame, this);
+        await wait(5000); // wait after spin
+
+        this.retries = 0; // reset on success
+      } catch (err: any) {
+        this.retries++;
+        this.addLog(`❌ Error during spin loop: ${err.message}. Retrying with another game...`);
+        await wait(2000);
+      }
     }
   }
+
 
   async toggleWindowState() {
     if (!this.session || !this.windowId) return;
