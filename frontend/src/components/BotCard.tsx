@@ -8,10 +8,10 @@ interface BotCardProps {
   onStart?: (id: string) => void;
 }
 
-export default function BotCard({ id }: BotCardProps) {
-  const [username, setUsername] = useState('');
+export default function BotCard({ id, username: initialUsername, delay: initialDelay }: BotCardProps) {
+  const [username, setUsername] = useState(initialUsername);
   const [password, setPassword] = useState('');
-  const [delay, setDelay] = useState('');
+  const [delay, setDelay] = useState(initialDelay.toString());
   const [log, setLog] = useState<string[]>([]);
   const hasStarted = useRef(false);
 
@@ -85,13 +85,16 @@ export default function BotCard({ id }: BotCardProps) {
 
 
   useEffect(() => {
-    if (hasStarted.current) return;
-
-    hasStarted.current = true;
-      fetchLog();
-      const interval = setInterval(fetchLog, 2500);
-      return () => clearInterval(interval);
+    fetchLog();
+    const interval = setInterval(fetchLog, 2500);
+    return () => clearInterval(interval);
   }, [id]);
+
+  useEffect(() => {
+    setUsername(initialUsername);
+    setDelay(initialDelay.toString());
+  }, [initialUsername, initialDelay]);
+
 
   return (
     <div className="relative w-full max-w-3xl">
@@ -128,7 +131,6 @@ export default function BotCard({ id }: BotCardProps) {
             type="number"
             placeholder="e.g. 14"
             value={delay}
-            defaultValue={30}
             min={10}
             onChange={(e) => setDelay(e.target.value)}
             className="border rounded px-3 py-2 w-24"

@@ -14,3 +14,5 @@
 - Nefunguje pořádně přidávání cards (nepřidávají se informace)
 - reagovat na zavření browseru
 - Loading for new Bot button
+- Bonus button is different (bonus detection)
+- <div class="btn bonusStartBtn" data-test="BONUS_START"><div class="icon"></div></div>
