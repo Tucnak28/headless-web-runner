@@ -77,7 +77,7 @@ export async function getGameIframe(page: Page, bot: SynotBot): Promise<Frame> {
     bot.addLog('✅ Game iframe loaded');
     return frame;
   } catch (err: any) {
-    throw new Error('❌ Failed to access game iframe: ');
+    throw new Error('❌ Failed to access game iframe');
   }
 }
 
@@ -108,7 +108,8 @@ async function dismissDialog(page: Page) {
 
 async function tryRemoveRetentionPanel(frame: Frame, bot: SynotBot) {
   const removed = await frame.$eval('#retentionPanelIcons', el => {
-    el.remove();
+    //el.remove();
+    (el as HTMLElement).style.display = "none";
     return true;
   }).catch(() => false);
 
@@ -136,7 +137,7 @@ export async function clickSpin(frame: Frame, bot: SynotBot) {
     bot.addLog('✅ Spin button clicked');
 
   } catch (err: any) {
-    throw new Error('❌ Failed to click spin button:' + err.message);
+    throw new Error('❌ Failed to click spin button');
   }
 }
 
@@ -158,7 +159,7 @@ export async function clickBetMinus(frame: Frame, page: Page, times: number = 10
 
     bot.addLog(`✅ Clicked #betMinus ${times} times`);
   } catch (err: any) {
-    throw new Error('❌ Failed to click Bet Minus button: ' + err.message);
+    throw new Error('❌ Failed to click Bet Minus button');
   }
 }
 

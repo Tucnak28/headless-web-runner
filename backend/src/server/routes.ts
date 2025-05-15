@@ -1,20 +1,20 @@
 import express, { Request, Response, Router } from "express";
 import { botManager } from "./BotManagerInstace";
+import { broadcastToClients } from "./Server";
 
 const router: Router = express.Router();
 
 // Start a new bot
-router.post("/start/:id", async (req: Request, res: Response): Promise<void> => {
-  const { id } = req.params;
-
-  if (botManager.getBot(id)) {
-    res.status(400).send(`Bot "${id}" already exists.`);
-    return;
-  }
-
+router.post("/startNewBot", async (req, res) => {
   try {
-    await botManager.createBot(id);
-    res.status(201).send(`✅ Bot "${id}" started`);
+    const bot = await botManager.createBot();
+
+    broadcastToClients({
+      type: "botList",
+      bots: botManager.getAllBotInfo(),
+    });
+
+    res.status(201).send(`✅ Bot "${bot.id}" started`);
   } catch (err: any) {
     res.status(500).send(`❌ Failed to start bot: ${err.message}`);
   }
@@ -92,8 +92,35 @@ router.post("/apply_settings/:id", async (req: Request, res: Response): Promise<
   bot.setLoginInfo(username, password);
   bot.setDelay(delay);
 
+  broadcastToClients({
+    type: "botList",
+    bots: botManager.getAllBotInfo(),
+  });
+
 
   res.send(`🪟 Set login info of "${id}"`);
 });
+
+// kill bot
+router.post("/kill_Bot/:id", async (req, res) => {
+  const { id } = req.params;
+  const bot = botManager.getBot(id);
+
+  if (!bot) {
+    res.status(404).send(`❌ Bot "${id}" not found`);
+    return;
+  }
+
+  await bot.kill();
+  botManager.removeBot(id);
+
+  broadcastToClients({
+    type: "botList",
+    bots: botManager.getAllBotInfo(),
+  });
+
+  res.send(`💀 Bot "${id}" terminated`);
+});
+
 
 export default router;

@@ -2,11 +2,13 @@ import { useEffect, useState, useRef } from 'react';
 import ConsoleLog from './ConsoleLog';
 
 interface BotCardProps {
-  id: string; // Keep this internally (for identification, not user input)
-  onKill?: (id: string) => void;
+  id: string;
+  username: string;
+  delay: number;
+  onStart?: (id: string) => void;
 }
 
-export default function BotCard({ id, onKill }: BotCardProps) {
+export default function BotCard({ id }: BotCardProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [delay, setDelay] = useState('');
@@ -18,7 +20,8 @@ export default function BotCard({ id, onKill }: BotCardProps) {
   const killBot = async () => {
     try {
       await fetch(`http://localhost:3001/api/kill_Bot/${id}`, { method: 'POST' });
-      if (onKill) onKill(id);
+
+
     } catch {
       setLog((prev) => [`[Failed to kill bot "${id}"]`, ...prev]);
     }
@@ -34,15 +37,6 @@ export default function BotCard({ id, onKill }: BotCardProps) {
     }
   };
 
-  const startBot = async () => {
-    try {
-      const res = await fetch(`http://localhost:3001/api/start/${id}`, { method: 'POST' });
-      const data = await res.text();
-      setLog([`[Started bot "${id}"]`, data]);
-    } catch {
-      setLog([`[Failed to start bot "${id}"]`]);
-    }
-  };
 
   const toggleSpin = async () => {
     try {
@@ -92,12 +86,11 @@ export default function BotCard({ id, onKill }: BotCardProps) {
 
   useEffect(() => {
     if (hasStarted.current) return;
+
     hasStarted.current = true;
-    startBot().then(() => {
       fetchLog();
-      const interval = setInterval(fetchLog, 5000);
+      const interval = setInterval(fetchLog, 2500);
       return () => clearInterval(interval);
-    });
   }, [id]);
 
   return (
@@ -109,6 +102,8 @@ export default function BotCard({ id, onKill }: BotCardProps) {
       ></div>
 
       <div className="bg-white text-gray-900 rounded-xl shadow-lg p-6 pt-8 w-full space-y-4">
+
+      <div className="flex justify-center text-gray-400">{id}</div>
 
       {/* Login fields */}
       <input
