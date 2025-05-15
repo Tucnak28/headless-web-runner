@@ -12,6 +12,7 @@ export class SynotBot {
   private session!: CDPSession;
   private windowId!: number;
   
+  private hasEcoModeInitialized = false;
   private performBoolean = false;
   private fakeMaximize = false;
   private ultraEcoMode = false;
@@ -32,6 +33,7 @@ export class SynotBot {
       "--disable-background-timer-throttling",
       "--disable-backgrounding-occluded-windows",
       "--remote-debugging-port=9222",
+      "--disable-gpu",
     ] });
     this.page = await this.browser.newPage();
     await this.page.goto("https://www.synottip.cz/", { waitUntil: "networkidle2" });
@@ -87,7 +89,11 @@ export class SynotBot {
   private async performActionsLoop() {
     while (this.performBoolean) {
       const frame = await waitForGameFrame(this.page, this);
-      await clickBetMinus(frame, 20, this);
+
+      if(this.ultraEcoMode) this.EcoMode();
+
+      await wait(90000);
+      await clickBetMinus(frame, this.page, 20, this);
       await clickSpin(frame, this);
       await wait(90000);
     }
@@ -109,83 +115,112 @@ async toggleUltraEcoMode() {
 
   this.ultraEcoMode = !this.ultraEcoMode;
 
-  if (this.ultraEcoMode) {
-    // 1. CPU throttling to max (very slow)
+  this.EcoMode();
+}
+
+
+async EcoMode() {
+  if (this.ultraEcoMode && !this.hasEcoModeInitialized) {
+    this.hasEcoModeInitialized = true;
+
+    // ── 1. CPU throttling
     await this.session.send("Emulation.setCPUThrottlingRate", { rate: 6 });
 
-    // 3. Tiny viewport + blurry pixel ratio
-    /*await this.page.setViewport({
-      width: 1,
-      height: 1,
-      deviceScaleFactor: 0.1
-    });*/
-
-    // 4. Override devicePixelRatio
+    // ── 2. Tiny viewport + low DPR
+    await this.page.setViewport({
+      width: 300,
+      height: 200,
+      deviceScaleFactor: 0.1,
+    });
     await this.page.evaluate(() => {
-      Object.defineProperty(window, 'devicePixelRatio', {
-        get() { return 0.1; }
+      Object.defineProperty(window, "devicePixelRatio", {
+        get: () => 0.1,
+        configurable: true,
       });
     });
 
-    // 5. Block all images, media, and fonts
+    // ── 3. Shrink and hide window
+    await this.session.send("Browser.setWindowBounds", {
+      windowId: this.windowId,
+      bounds: {
+        width: 320,
+        height: 240,
+      },
+    });
+
+    // ── 4. Block heavy resources
     await this.session.send("Network.enable");
     await this.session.send("Network.setRequestInterception", {
-    patterns: [
+      patterns: [
         { urlPattern: "*", resourceType: "Image", interceptionStage: "HeadersReceived" },
         { urlPattern: "*", resourceType: "Media", interceptionStage: "HeadersReceived" },
         { urlPattern: "*", resourceType: "Font", interceptionStage: "HeadersReceived" },
-        { urlPattern: "*", resourceType: "Stylesheet", interceptionStage: "HeadersReceived" },
-    ]
+        //{ urlPattern: "*", resourceType: "Stylesheet", interceptionStage: "HeadersReceived" },
+      ],
     });
 
-    this.session.on("Network.requestIntercepted", async (event: any) => {
-    const blocked = ["Image", "Media", "Font", "Stylesheet"].includes(event.resourceType);
-    await this.session.send("Network.continueInterceptedRequest", {
-        interceptionId: event.interceptionId,
-        errorReason: blocked ? "Aborted" : undefined
-    });
+    this.session.on("Network.requestIntercepted", async (evt: any) => {
+      const abort = ["Image", "Media", "Font"/*, "Stylesheet"*/].includes(evt.resourceType);
+      try {
+        await this.session.send("Network.continueInterceptedRequest", {
+          interceptionId: evt.interceptionId,
+          errorReason: abort ? "Aborted" : undefined,
+        });
+      } catch (err) {
+        this.addLog(`⚠️ Intercept failed: ${(err as Error).message}`);
+      }
     });
 
-    // 6. Stop animations, rendering, and JS-heavy loops
-    await this.page.emulateMediaFeatures([
-      { name: "prefers-reduced-motion", value: "reduce" }
-    ]);
-
+    // ── 5. Stop animations & JS-heavy rendering
+    await this.page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
     await this.page.evaluate(() => {
-      // Patch requestAnimationFrame
+      // Freeze requestAnimationFrame
       (window as any).__originalRAF = window.requestAnimationFrame;
       window.requestAnimationFrame = () => 0;
 
-      // Stop all CSS animations & transitions
-      const all = document.querySelectorAll("*");
-      for (const el of all) {
-        const style = el as HTMLElement;
-        style.style.animation = "none";
-        style.style.transition = "none";
-        style.style.transform = "none";
+      // Kill all transitions, animations, transforms
+      for (const el of Array.from(document.querySelectorAll("*")) as HTMLElement[]) {
+        el.style.transition = el.style.animation = el.style.transform = "none";
       }
 
-      // Stop canvas/webGL redraws
+      // Disable canvas/WebGL rendering
       const noop = () => {};
       HTMLCanvasElement.prototype.getContext = () => ({ clearRect: noop, fillRect: noop } as any);
     });
 
-    this.addLog("🛑 UltraEcoMode: EXTREME ACTIVATED");
+    // ── 6. Remove all visible text and headers not inside iframes
+    await this.page.evaluate(() => {
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      let node: Node | null;
+      while ((node = walker.nextNode())) {
+        if (!node.parentElement?.closest("iframe")) {
+          node.textContent = "";
+        }
+      }
 
-  } else {
-    // Restore everything
+      // Remove visible wrappers that aren't needed
+      document.querySelectorAll("header, nav, footer, .popup, #retentionPanelIcons, .promotion-wrapper-popup").forEach(el => el.remove());
+    });
+
+    this.addLog("🛑 UltraEcoMode: EXTREME ACTIVATED");
+  }
+
+  // ── DEACTIVATION
+  else if (!this.ultraEcoMode && this.hasEcoModeInitialized) {
+    this.hasEcoModeInitialized = false;
 
     await this.session.send("Emulation.setCPUThrottlingRate", { rate: 1 });
 
-    /*await this.page.setViewport({
+    await this.page.setViewport({
       width: 1280,
       height: 720,
-      deviceScaleFactor: 1
-    });*/
+      deviceScaleFactor: 1,
+    });
 
     await this.page.evaluate(() => {
       if ((window as any).__originalRAF) {
         window.requestAnimationFrame = (window as any).__originalRAF;
+        delete (window as any).__originalRAF;
       }
       delete (window as any).devicePixelRatio;
     });
@@ -193,14 +228,23 @@ async toggleUltraEcoMode() {
     await this.session.send("Network.disable");
     this.session.removeAllListeners("Network.requestIntercepted");
 
+    await this.page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "no-preference" }]);
 
-    await this.page.emulateMediaFeatures([
-      { name: "prefers-reduced-motion", value: "no-preference" }
-    ]);
+    await this.session.send("Browser.setWindowBounds", {
+      windowId: this.windowId,
+      bounds: {
+        left: 100,
+        top: 100,
+        width: 1280,
+        height: 720,
+      },
+    });
 
     this.addLog("🌱 UltraEcoMode: OFF");
   }
 }
+
+
 
 
 }

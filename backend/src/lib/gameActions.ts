@@ -26,24 +26,92 @@ export function pickRandomSynotGame() {
 }
 
 export async function waitForGameFrame(page: Page, bot: SynotBot): Promise<Frame> {
-  await page.goto(pickRandomSynotGame(), {
-    waitUntil: 'networkidle2'
-  });
+  const url = pickRandomSynotGame();
+  bot.addLog(`🔀 Navigating to new game: ${url}`);
 
-  const iframeElement = await page.waitForSelector('iframe');
-  const frame = await iframeElement?.contentFrame();
-  if (!frame) {
-    bot.addLog('❌ Could not access game iframe');
-    throw new Error('❌ Could not access game iframe');
+  try {
+
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+  } catch (err: any) {
+
+    if (err.message.includes('ERR_ABORTED')) {
+      bot.addLog('⚠️ navigation aborted (expected when changing URLs quickly)');
+    } else {
+      throw err;
+    }
   }
 
-  bot.addLog('✅ Game iframe loaded');
+  const iframeHandle = await page.waitForSelector('iframe[data-test-role="game-frame"]', {
+    timeout: 30_000
+  });
+
+  if(!iframeHandle) throw new Error('❌ Url did not change');
+
+  const frame = await iframeHandle.contentFrame();
+  if (!frame) {
+    bot.addLog('❌ Could not access game iframe');
+    throw new Error('Could not access game iframe');
+  }
+
+  bot.addLog(`✅ Game iframe is ready (${frame.url()})`);
   return frame;
 }
 
-export async function clickBetMinus(frame: Frame, times: number = 10, bot: SynotBot) {
+
+export async function clickBetMinus(frame: Frame, page: Page, times: number = 10, bot: SynotBot) {
   try {
   await frame.waitForSelector('#betMinus', { timeout: 10000 });
+
+
+  await wait(3000);
+
+  await page.evaluate(() => {
+    const findButton = (root: Document | ShadowRoot): HTMLElement | null => {
+      const buttons = root.querySelectorAll('peak-button');
+      for (const btn of buttons) {
+        if (btn.textContent?.trim() === 'OK') return btn as HTMLElement;
+      }
+
+      // Search recursively in shadow roots
+      for (const el of root.querySelectorAll('*')) {
+        const shadow = (el as HTMLElement).shadowRoot;
+        if (shadow) {
+          const found = findButton(shadow);
+          if (found) return found;
+        }
+      }
+
+      return null;
+    };
+
+    const btn = findButton(document);
+    if (btn) btn.click();
+  });
+
+  // AAAAAAAAAAAAAAAAA I WILL JUST DELETEEEE ITTT
+  await frame.waitForSelector('#retentionPanelIcons', { timeout: 5000 });
+
+  const removed = await frame.$eval(
+    '#retentionPanelIcons',
+    el => {
+      el.remove();
+      return true;
+    }
+  ).catch(() => false);
+
+  if (removed) {
+    //console.log('✅ #retentionPanelIcons was removed');
+  } else {
+    bot.addLog('ℹ️ #retentionPanelIcons not found or removal failed');
+  }
+
+
+
+
+
+
+
+
 
   for (let i = 0; i < times; i++) {
     await frame.click('#betMinus');
@@ -101,6 +169,22 @@ export async function findSpinButtonSelector(frame: Frame): Promise<string | nul
   //console.warn('⚠️ No known spin button selector matched.');
   return null;
 }
+
+export async function deepQuerySelector(page: Page, selectors: string[]): Promise<string | null> {
+  return await page.evaluate((selectors) => {
+    let context: any = document;
+    
+    for (const sel of selectors) {
+      const next = context.querySelector(sel);
+      if (!next) return null;
+      context = next.shadowRoot ?? next;
+    }
+
+    return context?.textContent ?? null;
+  }, selectors);
+}
+
+
 
 
 export async function clickOkButton(frame: Frame) {
