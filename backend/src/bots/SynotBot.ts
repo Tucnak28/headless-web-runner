@@ -42,7 +42,7 @@ export class SynotBot {
 
   async launch() {
     this.browser = await puppeteer.launch({
-      headless: false as any,
+      headless: 'new' as any,
       defaultViewport: null,
       args: [
         "--mute-audio",

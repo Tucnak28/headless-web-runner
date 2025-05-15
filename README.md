@@ -13,3 +13,4 @@
 - dynamické odstranovani Cards podle botManager
 - Nefunguje pořádně přidávání cards (nepřidávají se informace)
 - reagovat na zavření browseru
+- Loading for new Bot button
