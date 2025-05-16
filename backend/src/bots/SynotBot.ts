@@ -6,7 +6,8 @@ import {
   wait,
   tryLogin,
 } from "../lib/gameActions";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-extra";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import type { Browser, Page, CDPSession } from "puppeteer";
 import fs from "fs";
 import path from "path";
@@ -40,7 +41,13 @@ export class SynotBot {
 
   constructor(public id: string) {}
 
+
+
   async launch() {
+
+    puppeteer.use(StealthPlugin());
+
+
     this.browser = await puppeteer.launch({
       headless: 'new' as any,
       defaultViewport: null,
