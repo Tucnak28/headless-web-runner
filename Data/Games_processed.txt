@@ -11,8 +11,11 @@ Gapa
 'https://herna.gapagroup.cz/game/run/e0d2a12a-a95e-48d5-8141-99a13bb8a66d',
 'https://herna.gapagroup.cz/game/run/487e3b88-ffeb-42ac-a356-356260e300e9',
 'https://herna.gapagroup.cz/game/run/c2b1a20b-632b-46b5-b7c6-c089deae5e30',
-'https://herna.gapagroup.cz/game/run/48fa991c-b6b0-478a-a2b0-788b7326905f',
 'https://herna.gapagroup.cz/game/run/e9854e45-7e47-42b6-a7a5-0fca975b9245'
+
+
+
+'https://herna.gapagroup.cz/game/run/48fa991c-b6b0-478a-a2b0-788b7326905f',
 
 Fbet
 'https://www.fbet.cz/vegas/game/AladdinAndTheGoldenPalace/real',
@@ -44,5 +47,8 @@ Synottip
 'https://casino.synottip.cz/game/run/e0d2a12a-a95e-48d5-8141-99a13bb8a66d',
 'https://casino.synottip.cz/game/run/487e3b88-ffeb-42ac-a356-356260e300e9',
 'https://casino.synottip.cz/game/run/c2b1a20b-632b-46b5-b7c6-c089deae5e30',
-'https://casino.synottip.cz/game/run/48fa991c-b6b0-478a-a2b0-788b7326905f',
 'https://casino.synottip.cz/game/run/e9854e45-7e47-42b6-a7a5-0fca975b9245'
+
+
+
+'https://casino.synottip.cz/game/run/48fa991c-b6b0-478a-a2b0-788b7326905f',
