@@ -27,6 +27,7 @@ export class SynotBot {
   private username = "";
   private password = "";
   private delay = 0;
+  private platform = "";
   private retries = 0;
   private maxRetries = 5;
 
@@ -116,6 +117,7 @@ export class SynotBot {
       id: this.id,
       username: this.username,
       delay: this.delay,
+      platform: this.platform,
     };
   }
 
@@ -172,6 +174,11 @@ export class SynotBot {
     this.addLog(`⏱️ Delay set to ${this.delay}s for bot "${this.id}"`);
   };
 
+  public setPlatform = async (platform: string) => {
+    this.platform = platform;
+    this.addLog(`🪙 Platform set to ${platform} for bot "${this.id}"`);
+  };
+
   private async dynamicWait(label: keyof typeof this.delayWeights) {
     const totalWeight = Object.values(this.delayWeights).reduce(
       (a, b) => a + b,
@@ -193,6 +200,8 @@ export class SynotBot {
         });
       }
     }
+
+    this.retries = 0;
 
     this.addLog(
       this.performBoolean

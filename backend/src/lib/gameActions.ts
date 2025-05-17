@@ -4,26 +4,66 @@ import { SynotBot } from '../bots/SynotBot';
 export const wait = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 
-export function pickRandomSynotGame() {
-  const games = [
-'https://casino.synottip.cz/game/run/053ade1e-6bdf-4a01-b460-01a8e7f880f0',
-'https://casino.synottip.cz/game/run/6178bdc0-1602-4743-bd14-68165708c1c4',
-'https://casino.synottip.cz/game/run/00811bf9-eba4-4ab4-a4ea-a735af8e1d56',
-'https://casino.synottip.cz/game/run/48a4de0e-e13c-4bfb-8c40-11c314822e88',
-'https://casino.synottip.cz/game/run/0cbfd270-2fed-453b-b527-1326b7da323b',
-'https://casino.synottip.cz/game/run/f9388cbe-541f-41d8-8f7a-d86deec44138',
-'https://casino.synottip.cz/game/run/ce68ce74-4237-4af4-86ac-6105fabb8628',
-'https://casino.synottip.cz/game/run/b200c32e-30ea-498f-a0da-aa889e384a7a',
-'https://casino.synottip.cz/game/run/10eb9962-d7ee-4917-a4c9-f0b1f2081377',
-'https://casino.synottip.cz/game/run/e0d2a12a-a95e-48d5-8141-99a13bb8a66d',
-'https://casino.synottip.cz/game/run/487e3b88-ffeb-42ac-a356-356260e300e9',
-'https://casino.synottip.cz/game/run/c2b1a20b-632b-46b5-b7c6-c089deae5e30',
-'https://casino.synottip.cz/game/run/48fa991c-b6b0-478a-a2b0-788b7326905f'
-  ];
+export function pickRandomGame(bot: SynotBot): string {
+  const gamePools: Record<string, string[]> = {
+    Synottip: [
+      'https://casino.synottip.cz/game/run/053ade1e-6bdf-4a01-b460-01a8e7f880f0',
+      'https://casino.synottip.cz/game/run/6178bdc0-1602-4743-bd14-68165708c1c4',
+      'https://casino.synottip.cz/game/run/00811bf9-eba4-4ab4-a4ea-a735af8e1d56',
+      'https://casino.synottip.cz/game/run/48a4de0e-e13c-4bfb-8c40-11c314822e88',
+      'https://casino.synottip.cz/game/run/0cbfd270-2fed-453b-b527-1326b7da323b',
+      'https://casino.synottip.cz/game/run/f9388cbe-541f-41d8-8f7a-d86deec44138',
+      'https://casino.synottip.cz/game/run/ce68ce74-4237-4af4-86ac-6105fabb8628',
+      'https://casino.synottip.cz/game/run/b200c32e-30ea-498f-a0da-aa889e384a7a',
+      'https://casino.synottip.cz/game/run/10eb9962-d7ee-4917-a4c9-f0b1f2081377',
+      'https://casino.synottip.cz/game/run/e0d2a12a-a95e-48d5-8141-99a13bb8a66d',
+      'https://casino.synottip.cz/game/run/487e3b88-ffeb-42ac-a356-356260e300e9',
+      'https://casino.synottip.cz/game/run/c2b1a20b-632b-46b5-b7c6-c089deae5e30',
+      'https://casino.synottip.cz/game/run/e9854e45-7e47-42b6-a7a5-0fca975b9245',
+    ],
+    Gapa: [
+      'https://herna.gapagroup.cz/game/run/053ade1e-6bdf-4a01-b460-01a8e7f880f0',
+      'https://herna.gapagroup.cz/game/run/6178bdc0-1602-4743-bd14-68165708c1c4',
+      'https://herna.gapagroup.cz/game/run/00811bf9-eba4-4ab4-a4ea-a735af8e1d56',
+      'https://herna.gapagroup.cz/game/run/48a4de0e-e13c-4bfb-8c40-11c314822e88',
+      'https://herna.gapagroup.cz/game/run/0cbfd270-2fed-453b-b527-1326b7da323b',
+      'https://herna.gapagroup.cz/game/run/f9388cbe-541f-41d8-8f7a-d86deec44138',
+      'https://herna.gapagroup.cz/game/run/ce68ce74-4237-4af4-86ac-6105fabb8628',
+      'https://herna.gapagroup.cz/game/run/b200c32e-30ea-498f-a0da-aa889e384a7a',
+      'https://herna.gapagroup.cz/game/run/10eb9962-d7ee-4917-a4c9-f0b1f2081377',
+      'https://herna.gapagroup.cz/game/run/e0d2a12a-a95e-48d5-8141-99a13bb8a66d',
+      'https://herna.gapagroup.cz/game/run/487e3b88-ffeb-42ac-a356-356260e300e9',
+      'https://herna.gapagroup.cz/game/run/c2b1a20b-632b-46b5-b7c6-c089deae5e30',
+      'https://herna.gapagroup.cz/game/run/e9854e45-7e47-42b6-a7a5-0fca975b9245',
+    ],
+    Fbet: [
+      'https://www.fbet.cz/vegas/game/AladdinAndTheGoldenPalace/real',
+      'https://www.fbet.cz/vegas/game/BookOfSecrets/real',
+      'https://www.fbet.cz/vegas/game/Diamondz/real',
+      'https://www.fbet.cz/vegas/game/TikiPrincess/real',
+      'https://www.fbet.cz/vegas/game/HuntersSpirit/real',
+      'https://www.fbet.cz/vegas/game/BuffaloHunt/real',
+      'https://www.fbet.cz/vegas/game/BlazingIce/real',
+      'https://www.fbet.cz/vegas/game/AladdinMagicCarpet/real',
+      'https://www.fbet.cz/vegas/game/HellBars/real',
+      'https://www.fbet.cz/vegas/game/Eldorado/real',
+      'https://www.fbet.cz/vegas/game/FruityGold/real',
+      'https://www.fbet.cz/vegas/game/FruityGold81/real',
+      'https://www.fbet.cz/vegas/game/AtlantisGold/real',
+      'https://www.fbet.cz/vegas/game/MirrorShield/real',
+      'https://www.fbet.cz/vegas/game/MonkeySlots/real',
+    ]
+  };
 
-  const randomIndex = Math.floor(Math.random() * games.length);
-  return games[randomIndex];
+  const pool = gamePools[bot.getInfo().platform];
+  if (!pool || pool.length === 0) {
+    throw new Error(`No games found for platform "${bot.getInfo().platform}"`);
+  }
+
+  const randomIndex = Math.floor(Math.random() * pool.length);
+  return pool[randomIndex];
 }
+
 
 export async function tryLogin(page: Page, bot: SynotBot, username: string, password: string) {
   try {
@@ -51,7 +91,7 @@ export async function tryLogin(page: Page, bot: SynotBot, username: string, pass
 
 
 export async function navigateToGamePage(page: Page, bot: SynotBot): Promise<void> {
-  const url = pickRandomSynotGame();
+  const url = pickRandomGame(bot);
   bot.addLog(`🔀 Navigating to new game: ${url}`);
 
   try {
@@ -108,8 +148,15 @@ async function dismissDialog(page: Page) {
 
 async function tryRemoveRetentionPanel(frame: Frame, bot: SynotBot) {
   const removed = await frame.$eval('#retentionPanelIcons', el => {
-    //el.remove();
+    el.remove();
+    /*const s = (el as HTMLElement).style;
     (el as HTMLElement).style.display = "none";
+    s.setProperty('pointer-events', 'none', 'important');
+    s.setProperty('opacity',        '0',   'important');
+    s.setProperty('visibility',     'hidden', 'important');
+
+    s.setProperty('width',  '0', 'important');
+    s.setProperty('height', '0', 'important');*/
     return true;
   }).catch(() => false);
 

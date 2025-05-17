@@ -6,27 +6,24 @@ interface ConsoleLogProps {
 
 export default function FancyConsoleLog({ lines }: ConsoleLogProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const prevHeightRef = useRef<number>(0);   // remember previous scrollHeight
+  const prevHeightRef = useRef<number>(0);
 
   useLayoutEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
-    // Are we already looking at the newest logs (≈ top 5 px)?
     const isAtTop = el.scrollTop < 5;
 
-    // How much taller did the content become?
     const heightDiff = el.scrollHeight - (prevHeightRef.current ?? 0);
 
     if (isAtTop) {
-      // User is at the top → keep showing newest logs.
+
       el.scrollTop = 0;
     } else {
-      // User is reading older logs → shift viewport down by the growth amount.
+
       el.scrollTop += heightDiff;
     }
 
-    // Update for next render
     prevHeightRef.current = el.scrollHeight;
   }, [lines]);
 

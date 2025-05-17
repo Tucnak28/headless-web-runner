@@ -1,19 +1,21 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import ConsoleLog from './ConsoleLog';
 
 interface BotCardProps {
   id: string;
   username: string;
   delay: number;
+  platform: string;
   onStart?: (id: string) => void;
 }
 
-export default function BotCard({ id, username: initialUsername, delay: initialDelay }: BotCardProps) {
+export default function BotCard({ id, username: initialUsername, delay: initialDelay, platform: initialPlatform }: BotCardProps) {
   const [username, setUsername] = useState(initialUsername);
   const [password, setPassword] = useState('');
   const [delay, setDelay] = useState(initialDelay.toString());
   const [log, setLog] = useState<string[]>([]);
-  const hasStarted = useRef(false);
+  const [platform, setPlatform] = useState(initialPlatform);
+
 
 
 
@@ -72,7 +74,7 @@ export default function BotCard({ id, username: initialUsername, delay: initialD
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, password, delay }),
+        body: JSON.stringify({ username, password, delay, platform }),
       });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -137,6 +139,20 @@ export default function BotCard({ id, username: initialUsername, delay: initialD
           />
         </div>
       </div>
+
+      <div className="flex justify-end gap-2 items-center">
+        <label className="text-sm text-gray-700">Platform</label>
+        <select
+          value={platform}
+          onChange={(e) => setPlatform(e.target.value)}
+          className="border rounded px-3 py-2"
+        >
+          <option value="Fbet">Fbet</option>
+          <option value="Synottip">Synottip</option>
+          <option value="Gapa">Gapa</option>
+        </select>
+      </div>
+
 
 
 

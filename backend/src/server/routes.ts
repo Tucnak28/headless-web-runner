@@ -87,10 +87,11 @@ router.post("/apply_settings/:id", async (req: Request, res: Response): Promise<
     return;
   }
 
-  const { username, password, delay } = req.body;
+  const { username, password, delay, platform } = req.body;
 
   bot.setLoginInfo(username, password);
   bot.setDelay(delay);
+  bot.setPlatform(platform);
 
   broadcastToClients({
     type: "botList",
