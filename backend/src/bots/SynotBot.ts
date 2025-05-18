@@ -49,6 +49,7 @@ export class SynotBot {
     puppeteer.use(StealthPlugin());
 
 
+    try {
     this.browser = await puppeteer.launch({
       headless: 'new' as any,
       defaultViewport: null,
@@ -108,6 +109,10 @@ export class SynotBot {
         windowState: "normal",
       },
     });
+
+  } catch (err) { 
+    console.error("❌ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA:", err);
+  }
 
     //await this.injectControlUI();
   }
