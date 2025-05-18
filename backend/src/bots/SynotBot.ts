@@ -63,27 +63,22 @@ export class SynotBot {
         "--disable-accelerated-video-decode",
         "--disable-backgrounding-occluded-windows",
         "--disable-background-timer-throttling",
-        "--disable-breakpad",
         "--disable-client-side-phishing-detection",
         "--disable-default-apps",
-        "--disable-domain-reliability",
         "--disable-features=site-per-process,TranslateUI,BlinkGenPropertyTrees",
-        "--disable-hang-monitor",
         "--disable-popup-blocking",
         "--disable-prompt-on-repost",
         "--disable-renderer-backgrounding",
-        "--disable-sync",
-        "--force-color-profile=srgb",
         "--metrics-recording-only",
         "--no-first-run",
         "--no-default-browser-check",
-        "--enable-automation",
         "--password-store=basic",
         "--use-mock-keychain",
         "--autoplay-policy=no-user-gesture-required",
         "--hide-scrollbars",
-        "--disable-extensions",
         "--disable-component-update",
+        "--enable-blink-features=IdleDetection",
+
       ],
     });
 
@@ -95,12 +90,6 @@ export class SynotBot {
     const info = await this.session.send("Browser.getWindowForTarget");
     this.windowId = info.windowId;
 
-    await this.page.evaluate(() => {
-      Object.defineProperty(window, "devicePixelRatio", {
-        get: () => 0.1,
-        configurable: true,
-      });
-    });
 
     await this.session.send("Browser.setWindowBounds", {
       windowId: this.windowId,
@@ -109,7 +98,97 @@ export class SynotBot {
       },
     });
 
-    //await this.injectControlUI();
+    const userAgents = [
+      "Mozilla/5.0 (Windows NT 10.0; WOW64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5756.197 Safari/537.36",
+      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.5672 Safari/537.36",
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.3713.147 Safari/537.36",
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.79 Safari/537.36"
+    ];
+
+
+    await this.page.setUserAgent(
+      userAgents[Math.floor(Math.random() * userAgents.length)]
+    );
+
+    const possible = [
+      // laptop-style
+      { width: 1366, height: 768,  dpr: 1 },
+      { width: 1280, height: 800,  dpr: 1 },
+      { width: 1280, height: 720,  dpr: 1 },
+
+      // very light
+      { width: 1024, height: 768,  dpr: 1 },
+      { width: 800,  height: 600,  dpr: 1 },
+    ];
+
+    const pick = possible[Math.floor(Math.random() * possible.length)];
+    await this.page.setViewport(pick);
+
+    await this.page.setExtraHTTPHeaders({ "Accept-Language": "cs-CZ,cs;q=0.9" });
+
+    await this.page.evaluateOnNewDocument((origFnStr) => {
+
+      Object.defineProperty(navigator, "hardwareConcurrency", {
+        get: () => 4
+      });
+
+      // maxTouchPoints (desktop = 0)
+      Object.defineProperty(navigator, "maxTouchPoints", {
+        get: () => 0
+      });
+
+
+      // Languages
+      Object.defineProperty(navigator, "language", { get: () => "cs-CZ" });
+      Object.defineProperty(navigator, "languages", { get: () => ["cs-CZ", "cs"] });
+
+      // timezone match locale
+      const orig = eval(origFnStr);
+      Object.defineProperty(
+        Intl.DateTimeFormat.prototype,
+        "resolvedOptions",
+        {
+          configurable: true,
+          writable: true,
+          value() {
+            const opts = orig.call(this);
+            return { ...opts, locale: "cs-CZ", timeZone: "Europe/Prague" };
+          },
+        }
+      );
+
+
+      // Platform
+      Object.defineProperty(navigator, "platform", { get: () => "Win32" });
+
+      // WebGL Vendor & Renderer
+      const getParameter = WebGLRenderingContext.prototype.getParameter;
+      WebGLRenderingContext.prototype.getParameter = function (param) {
+        if (param === 37445) return "Intel Inc."; // UNMASKED_VENDOR_WEBGL
+        if (param === 37446) return "Intel Iris OpenGL Engine"; // UNMASKED_RENDERER_WEBGL
+        return getParameter.call(this, param);
+      };
+
+      // Iframes
+      Object.defineProperty(HTMLIFrameElement.prototype, 'contentWindow', {
+        get: function () {
+          return window;
+        }
+      });
+
+      // Notifications (prevent detection)
+      const originalQuery = window.navigator.permissions.query;
+      window.navigator.permissions.query = async (parameters) => {
+        if (parameters.name === "notifications") {
+          return {
+            state: Notification.permission,
+            onchange: null,
+          } as PermissionStatus;
+        }
+        return originalQuery(parameters);
+      };
+    }, Intl.DateTimeFormat.prototype.resolvedOptions.toString());
+
   }
 
   public getInfo() {
