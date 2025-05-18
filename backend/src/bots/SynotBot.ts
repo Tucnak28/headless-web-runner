@@ -8,7 +8,8 @@ import {
 } from "../lib/gameActions";
 import puppeteer from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
-import type { Browser, Page, CDPSession } from "puppeteer";
+import type { Browser, Page, CDPSession, ClickOptions  } from "puppeteer";
+import { createCursor } from 'ghost-cursor';
 import fs from "fs";
 import path from "path";
 
@@ -48,11 +49,21 @@ export class SynotBot {
 
     puppeteer.use(StealthPlugin());
 
+    const possible = [
+    { width: 1366, height: 768, dpr: 1 },
+    { width: 1280, height: 800, dpr: 1 },
+    { width: 1280, height: 720, dpr: 1 },
+    { width: 1024, height: 768, dpr: 1 },
+    { width:  800, height: 600, dpr: 1 },
+    ];
+    const pick = possible[Math.floor(Math.random() * possible.length)];
+
 
     this.browser = await puppeteer.launch({
       headless: 'new' as any,
       defaultViewport: null,
       args: [
+        `--window-size=${pick.width},${pick.height}`,
         "--mute-audio",
         "--no-sandbox",
         "--disable-gpu",
@@ -90,39 +101,25 @@ export class SynotBot {
     const info = await this.session.send("Browser.getWindowForTarget");
     this.windowId = info.windowId;
 
+    patchPageClick(this.page);
 
-    await this.session.send("Browser.setWindowBounds", {
-      windowId: this.windowId,
-      bounds: {
-        windowState: "normal",
-      },
-    });
+
 
     const userAgents = [
-      "Mozilla/5.0 (Windows NT 10.0; WOW64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5756.197 Safari/537.36",
-      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.5672 Safari/537.36",
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.3713.147 Safari/537.36",
-      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.79 Safari/537.36"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.7103.25 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.6.28.62 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.6998.35 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.6943.16 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.6422.142 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.6367.91 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.2.8219.101 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.33 Safari/537.36",
     ];
 
 
     await this.page.setUserAgent(
       userAgents[Math.floor(Math.random() * userAgents.length)]
     );
-
-    const possible = [
-      // laptop-style
-      { width: 1366, height: 768,  dpr: 1 },
-      { width: 1280, height: 800,  dpr: 1 },
-      { width: 1280, height: 720,  dpr: 1 },
-
-      // very light
-      { width: 1024, height: 768,  dpr: 1 },
-      { width: 800,  height: 600,  dpr: 1 },
-    ];
-
-    const pick = possible[Math.floor(Math.random() * possible.length)];
-    await this.page.setViewport(pick);
 
     await this.page.setExtraHTTPHeaders({ "Accept-Language": "cs-CZ,cs;q=0.9" });
 
@@ -534,4 +531,38 @@ export class SynotBot {
       this.addLog("🌱 UltraEcoMode: OFF");
     }
   }
+}
+
+
+
+export function patchPageClick(page: Page) {
+  // keep a reference to the original
+  const origClick = page.click.bind(page);
+
+  // create a cursor instance
+  const cursor = createCursor(page);
+
+  // override page.click
+  page.click = async (selector: string, options?: ClickOptions) => {
+    // 1. find element center
+    const { x, y, width, height } = await page.$eval(selector, el => {
+      const r = el.getBoundingClientRect();
+      return { x: r.left, y: r.top, width: r.width, height: r.height };
+    });
+
+    // 2. pick a random point inside
+    const target = {
+      x: x + width  * (0.3 + Math.random() * 0.4), // between 30%–70% of width
+      y: y + height * (0.3 + Math.random() * 0.4),
+    };
+
+    // 3. move there with ghost -cursor (arcs, jitter, speed variation)
+    await cursor.move(selector);
+
+    // 4. optional hover-pause
+    await wait(100 + Math.random() * 200);
+
+    // 5. call the real click (this fires mousedown/mouseup at the current pointer position)
+    return origClick(selector, { delay: 50 + Math.random() * 100, ...options });
+  };
 }
