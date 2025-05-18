@@ -1,6 +1,9 @@
 import express, { Request, Response, Router } from "express";
 import { botManager } from "./BotManagerInstace";
 import { broadcastToClients } from "./Server";
+import { wait } from "../lib/gameActions";
+import path from "path";
+import fs from "fs";
 
 const router: Router = express.Router();
 
@@ -102,6 +105,8 @@ router.post("/apply_settings/:id", async (req: Request, res: Response): Promise<
   res.send(`🪟 Set login info of "${id}"`);
 });
 
+
+
 // kill bot
 router.post("/kill_Bot/:id", async (req, res) => {
   const { id } = req.params;
@@ -123,5 +128,53 @@ router.post("/kill_Bot/:id", async (req, res) => {
   res.send(`💀 Bot "${id}" terminated`);
 });
 
+
+router.post("/test_stealth/", async (req: Request, res: Response) => {
+  const bot = await botManager.createBot();
+  const id = bot.id;
+
+  try {
+    const page = bot["page"];
+
+    await page.goto("https://fingerprintjs.github.io/BotD/main/", {
+      waitUntil: "networkidle2",
+      timeout: 30000,
+    });
+
+
+    await wait(5000);
+
+    let screenshotPath = path.join("screenshots", `bot-test1-${id}.png`);
+    fs.mkdirSync("screenshots", { recursive: true });
+
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+
+      await page.goto("https://amiunique.org/fingerprint", {
+      waitUntil: "networkidle2",
+      timeout: 30000,
+    });
+
+    await wait(15000);
+
+    screenshotPath = path.join("screenshots", `bot-test2-${id}.png`);
+    fs.mkdirSync("screenshots", { recursive: true });
+
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+    
+
+    await bot.kill();
+    botManager.removeBot(id);
+
+    res.json({
+      message: `✅ Bot "${id}" tested and killed.`,
+      screenshot: screenshotPath,
+    });
+
+  } catch (err: any) {
+    await bot.kill();
+    botManager.removeBot(id);
+    res.status(500).send(`❌ Error during test: ${err.message}`);
+  }
+});
 
 export default router;
