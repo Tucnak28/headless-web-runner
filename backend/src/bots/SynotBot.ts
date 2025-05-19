@@ -30,7 +30,7 @@ export class SynotBot {
   private delay = 0;
   private platform = "";
   private retries = 0;
-  private maxRetries = 3;
+  private maxRetries = 4;
 
   private delayWeights = {
     nav: 2,
@@ -317,8 +317,8 @@ export class SynotBot {
         );
 
         if (this.retries >= this.maxRetries) {
-          this.addLog("⚠️ Too many retries, waiting 14 minutes...");
-          await wait(900_000);
+          this.addLog("⚠️ Too many retries, waiting 11 minutes...");
+          await wait(660_000);
           this.retries = 0;
         } else {
           await wait(2000);
