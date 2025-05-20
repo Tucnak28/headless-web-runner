@@ -306,11 +306,8 @@ export class SynotBot {
         await clickBetMinus(frame, this.page, 20, this);
         await this.dynamicWait("settle3");
 
-        const spins = getRandomSpinCount();
-        for (let i = 0; i < spins; i++) {
-          await clickSpin(frame, this);
-          await this.dynamicWait("spin");
-        }
+        await clickSpin(frame, this);
+        await this.dynamicWait("spin");
 
         this.retries = 0;
       } catch (err: any) {
@@ -536,12 +533,6 @@ export class SynotBot {
   }
 }
 
-function getRandomSpinCount(): number {
-  const r = Math.random();
-  if (r < 0.25) return 3; // 25 %
-  if (r < 0.75) return 2; // 50 %
-  return 1;              // 100 %
-}
 
 
 export function patchPageClick(page: Page) {
