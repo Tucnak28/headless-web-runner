@@ -94,7 +94,7 @@ export class SynotBot {
     });
 
     this.page = await this.browser.newPage();
-    await this.page.goto("https://www.synottip.cz/", {
+    await this.page.goto("https://www.wikipedia.org/", {
       waitUntil: "networkidle2",
     });
     this.session = await this.page.createCDPSession();

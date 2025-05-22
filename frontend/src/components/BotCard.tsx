@@ -148,6 +148,7 @@ export default function BotCard({ id, username: initialUsername, delay: initialD
           className="border rounded px-3 py-2"
         >
           <option value="Fbet">Fbet</option>
+          <option value="Forbes">Forbes</option>
           <option value="Synottip">Synottip</option>
           <option value="Gapa">Gapa</option>
         </select>

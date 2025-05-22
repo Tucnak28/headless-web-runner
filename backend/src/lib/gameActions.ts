@@ -68,7 +68,13 @@ export function pickRandomGame(bot: SynotBot): string {
       'https://www.fbet.cz/vegas/game/AtlantisGold/real',
       'https://www.fbet.cz/vegas/game/MirrorShield/real',
       'https://www.fbet.cz/vegas/game/MonkeySlots/real',
+    ],
+
+    Forbes: [
+      'https://www.forbescasino.cz/game/1384/online/amazons_wonders',
     ]
+
+
   };
 
   const pool = gamePools[bot.getInfo().platform];
