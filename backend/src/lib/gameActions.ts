@@ -118,8 +118,6 @@ export async function tryLogin(page: Page, bot: SynotBot, username: string, pass
 
       bot.addLog("✅ Login submitted");
       await wait(3000);
-    } else {
-      throw new Error("❌ Login form inputs not found or are disabled");
     }
   } catch (err: any) {
     throw new Error(`❌ Failed during login attempt: ${err.message}`);
