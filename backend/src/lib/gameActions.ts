@@ -1,4 +1,4 @@
-import type { Frame, Page } from 'puppeteer';
+import type { Frame, Page, ElementHandle } from 'puppeteer';
 import { SynotBot } from '../bots/SynotBot';
 
 export const wait = (ms: number) => new Promise(res => setTimeout(res, ms));
@@ -82,28 +82,56 @@ export function pickRandomGame(bot: SynotBot): string {
 
 
 export async function tryLogin(page: Page, bot: SynotBot, username: string, password: string) {
-  try {
-    const loginExists = await page.$('input[name="login"]');
-    const passwordExists = await page.$('input[name="password"]');
+  const usernameSelectors = [
+    'input[name="login"]',
+    'input[name="username"]',
+    'input[name="email"]',
+    'input[formcontrolname="name"]',
+    '#login-email',
+    'input[autocomplete="username"]'
+  ];
 
-    if (loginExists && passwordExists) {
+  const passwordSelectors = [
+    'input[name="password"]',
+    'input[formcontrolname="psw"]',
+    '#login-pass',
+    'input[autocomplete="current-password"]'
+  ];
+
+  try {
+    const usernameField = await findEnabledInput(page, usernameSelectors);
+    const passwordField = await findEnabledInput(page, passwordSelectors);
+
+    if (usernameField && passwordField) {
       bot.addLog("🔒 Login form detected. Attempting login...");
 
-      await page.type('input[name="login"]', username, { delay: 50 });
-      await page.type('input[name="password"]', password, { delay: 50 });
+      await usernameField.type(username, { delay: 50 });
+      await passwordField.type(password, { delay: 50 });
 
-      // Attempt to submit the form (press Enter on password field)
       await page.keyboard.press('Enter');
 
       bot.addLog("✅ Login submitted");
-      await wait(3000); // wait for login to complete
+      await wait(3000);
     } else {
-      //bot.addLog("ℹ️ No login form detected.");
+      throw new Error("❌ Login form inputs not found or are disabled");
     }
   } catch (err: any) {
-    throw new Error('❌ Failed to check or fill login form');
+    throw new Error(`❌ Failed during login attempt: ${err.message}`);
   }
 }
+
+async function findEnabledInput(page: Page, selectors: string[]): Promise<ElementHandle<Element> | null> {
+  for (const selector of selectors) {
+    const el = await page.$(selector);
+    if (el) {
+      const isDisabled = await page.evaluate(el => el.hasAttribute('disabled'), el);
+      if (!isDisabled) return el;
+    }
+  }
+  return null;
+}
+
+
 
 
 export async function navigateToGamePage(page: Page, bot: SynotBot): Promise<void> {
