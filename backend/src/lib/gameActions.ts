@@ -98,6 +98,50 @@ export function pickRandomGame(bot: SynotBot): string {
   return pool[randomIndex];
 }
 
+async function tryClick(
+  page: Page,
+  options: {
+    selector?: string;       // CSS selector to find element(s)
+    tagName?: string;        // optional tag name filter, e.g. 'button'
+    text?: string;           // inner text to match exactly (trimmed)
+  }
+): Promise<boolean> {
+  if (options.selector && !options.text) {
+    const el = await page.$(options.selector);
+    if (el) {
+      await el.click();
+      return true;
+    }
+    return false;
+  }
+
+  return await page.evaluate(({ tagName, text, selector }) => {
+    let elements: Element[] = [];
+
+    if (selector) {
+      elements = Array.from(document.querySelectorAll(selector));
+    } else if (tagName) {
+      elements = Array.from(document.getElementsByTagName(tagName));
+    } else {
+      elements = Array.from(document.querySelectorAll('*'));
+    }
+
+    const el = elements.find(e => {
+      if (!text) return true;
+      return e.textContent?.trim() === text;
+    });
+
+    if (el) {
+      (el as HTMLElement).click();
+      return true;
+    }
+    return false;
+  }, { tagName: options.tagName ?? '', text: options.text ?? '', selector: options.selector ?? '' });
+}
+
+
+
+
 
 export async function tryLogin(page: Page, bot: SynotBot, username: string, password: string) {
   const usernameSelectors = [
@@ -117,20 +161,73 @@ export async function tryLogin(page: Page, bot: SynotBot, username: string, pass
   ];
 
   try {
-    const usernameField = await findEnabledInput(page, usernameSelectors);
-    const passwordField = await findEnabledInput(page, passwordSelectors);
+    if (bot.platform === "Fbet") {
+      await tryClick(page, { selector: "#CybotCookiebotDialogBodyButtonAccept" });
 
-    if (usernameField && passwordField) {
-      bot.addLog("🔒 Login form detected. Attempting login...");
+      await tryClick(page, { tagName: "button", text: "Beru na vědomí" });
 
-      await usernameField.type(username, { delay: 50 });
-      await passwordField.type(password, { delay: 50 });
 
-      await page.keyboard.press('Enter');
+      const hasCasino = (await page.$(".casinoGame")) !== null;
 
-      bot.addLog("✅ Login submitted");
-      await wait(3000);
+      if (!hasCasino) {
+        const userAgent = await page.browser().userAgent();
+
+        bot.addLog(userAgent);
+
+        await page.evaluate(
+          async (nickname: string, password: string, userAgent: string) => {
+            await fetch("https://www.fbet.cz/api/web/v1/client/login", {
+              credentials: "include",
+              headers: {
+                "User-Agent": userAgent,
+                "Accept": "application/json, text/plain, */*",
+                "Accept-Language": "en-US,en;q=0.5",
+                "Sec-Fetch-Dest": "empty",
+                "Sec-Fetch-Mode": "no-cors",
+                "Sec-Fetch-Site": "same-origin",
+                "Content-Type": "application/json",
+                "Alt-Used": "www.fbet.cz",
+                "Priority": "u=0",
+                "Pragma": "no-cache",
+                "Cache-Control": "no-cache"
+              },
+              referrer: "https://www.fbet.cz/",
+              body: JSON.stringify({
+                nickname,
+                password
+              }),
+              method: "POST",
+              mode: "cors"
+            });
+          },
+          username,
+          password,
+          userAgent
+        );
+
+        throw new Error(`✅ Login fetch sent for Fbet (changing Game URL)`);
+
+      } else {
+        bot.addLog("⚠️ casino Game detected on Fbet, skipping fetch login.");
+      }
+    } else {
+      // Fallback: classic form login
+      const usernameField = await findEnabledInput(page, usernameSelectors);
+      const passwordField = await findEnabledInput(page, passwordSelectors);
+
+      if (usernameField && passwordField) {
+        bot.addLog("🔒 Login form detected. Attempting login...");
+
+        await usernameField.type(username, { delay: 50 });
+        await passwordField.type(password, { delay: 50 });
+
+        await page.keyboard.press("Enter");
+
+        bot.addLog("✅ Login submitted via form");
+        await wait(3000);
+      }
     }
+
   } catch (err: any) {
     throw new Error(`❌ Failed during login attempt: ${err.message}`);
   }

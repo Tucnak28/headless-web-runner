@@ -28,7 +28,8 @@ export class SynotBot {
   private username = "";
   private password = "";
   private delay = 0;
-  private platform = "";
+  public platform = "";
+  public userAgent = "";
   private retries = 0;
   private maxRetries = 4;
 
@@ -50,11 +51,12 @@ export class SynotBot {
     puppeteer.use(StealthPlugin());
 
     const possible = [
-    { width: 1366, height: 768, dpr: 1 },
-    { width: 1280, height: 800, dpr: 1 },
-    { width: 1280, height: 720, dpr: 1 },
-    { width: 1024, height: 768, dpr: 1 },
-    { width:  800, height: 600, dpr: 1 },
+    { width: 1920, height: 1080, dpr: 1 },
+    //{ width: 1366, height: 768, dpr: 1 },
+    //{ width: 1280, height: 800, dpr: 1 },
+    //{ width: 1280, height: 720, dpr: 1 },
+    //{ width: 1024, height: 768, dpr: 1 },
+    //{ width:  800, height: 600, dpr: 1 },
     ];
     const pick = possible[Math.floor(Math.random() * possible.length)];
 
@@ -116,12 +118,9 @@ export class SynotBot {
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.33 Safari/537.36",
     ];
 
+    this.userAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
 
-    await this.page.setUserAgent(
-      userAgents[Math.floor(Math.random() * userAgents.length)]
-    );
-
-    await this.page.setExtraHTTPHeaders({ "Accept-Language": "cs-CZ,cs;q=0.9" });
+    await this.page.setUserAgent(this.userAgent);
 
     await this.page.evaluateOnNewDocument((origFnStr) => {
 

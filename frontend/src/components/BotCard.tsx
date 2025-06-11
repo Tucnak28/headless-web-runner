@@ -14,7 +14,7 @@ export default function BotCard({ id, username: initialUsername, delay: initialD
   const [password, setPassword] = useState('');
   const [delay, setDelay] = useState(initialDelay.toString());
   const [log, setLog] = useState<string[]>([]);
-  const [platform, setPlatform] = useState(initialPlatform);
+  const [platform, setPlatform] = useState(initialPlatform || "Fbet");
 
 
 
