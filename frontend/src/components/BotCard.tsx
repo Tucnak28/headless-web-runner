@@ -15,15 +15,18 @@ export default function BotCard({ id, username: initialUsername, delay: initialD
   const [delay, setDelay] = useState(initialDelay.toString());
   const [log, setLog] = useState<string[]>([]);
   const [platform, setPlatform] = useState(initialPlatform || "Fbet");
+  const [isDead, setIsDead] = useState(false);
 
 
 
 
   const killBot = async () => {
     try {
-      await fetch(`http://localhost:3001/api/kill_Bot/${id}`, { method: 'POST' });
-
-
+      const response = await fetch(`http://localhost:3001/api/kill_Bot/${id}`, { method: 'POST' });
+      if (response.ok) {
+        setIsDead(true);
+        setLog((prev) => [`💀 Bot "${id}" has been terminated`, ...prev]);
+      }
     } catch {
       setLog((prev) => [`[Failed to kill bot "${id}"]`, ...prev]);
     }
@@ -100,15 +103,19 @@ export default function BotCard({ id, username: initialUsername, delay: initialD
 
   return (
     <div className="relative w-full max-w-3xl">
-      <div
-        onClick={killBot}
-        title="Kill bot"
-        className="absolute top-0 right-0 w-0 h-0 border-t-[48px] border-l-[48px] border-t-red-700 border-l-transparent cursor-pointer z-10 hover:brightness-120 active:scale-105 transition-all"
-      ></div>
+      {!isDead && (
+        <div
+          onClick={killBot}
+          title="Kill bot"
+          className="absolute top-0 right-0 w-0 h-0 border-t-[48px] border-l-[48px] border-t-red-700 border-l-transparent cursor-pointer z-10 hover:brightness-120 active:scale-105 transition-all"
+        ></div>
+      )}
 
-      <div className="bg-white text-gray-900 rounded-xl shadow-lg p-6 pt-8 w-full space-y-4">
+      <div className={`bg-white text-gray-900 rounded-xl shadow-lg p-6 pt-8 w-full space-y-4 transition-all ${isDead ? 'opacity-50 grayscale bg-gray-100 border-4 border-red-500' : ''}`}>
 
-      <div className="flex justify-center text-gray-400">{id}</div>
+      <div className="flex justify-center text-gray-400">
+        {id} {isDead && <span className="ml-2 text-red-500 font-bold">💀 DEAD</span>}
+      </div>
 
       {/* Login fields */}
       <input
@@ -116,14 +123,16 @@ export default function BotCard({ id, username: initialUsername, delay: initialD
         placeholder="Username"
         value={username}
         onChange={(e) => setUsername(e.target.value)}
-        className="w-full border rounded px-4 py-2"
+        disabled={isDead}
+        className="w-full border rounded px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
       />
       <input
         type="password"
         placeholder="Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        className="w-full border rounded px-4 py-2"
+        disabled={isDead}
+        className="w-full border rounded px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
       />
 
       <div className="flex justify-end">
@@ -135,7 +144,8 @@ export default function BotCard({ id, username: initialUsername, delay: initialD
             value={delay}
             min={10}
             onChange={(e) => setDelay(e.target.value)}
-            className="border rounded px-3 py-2 w-24"
+            disabled={isDead}
+            className="border rounded px-3 py-2 w-24 disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
       </div>
@@ -145,7 +155,8 @@ export default function BotCard({ id, username: initialUsername, delay: initialD
         <select
           value={platform}
           onChange={(e) => setPlatform(e.target.value)}
-          className="border rounded px-3 py-2"
+          disabled={isDead}
+          className="border rounded px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <option value="Fbet">Fbet</option>
           <option value="Forbes">Forbes</option>
@@ -160,14 +171,14 @@ export default function BotCard({ id, username: initialUsername, delay: initialD
 
         {/* Controls */}
         <div className="flex flex-wrap justify-center gap-4">
-          <button className="btn" onClick={applySettings}>Apply Settings</button>
-          <button className="btn" onClick={toggleSpin}>Toggle spin</button>
-          <button className="btn" onClick={toggleWindow}>Out of Bounds</button>
+          <button className="btn" onClick={applySettings} disabled={isDead}>Apply Settings</button>
+          <button className="btn" onClick={toggleSpin} disabled={isDead}>Toggle spin</button>
+          <button className="btn" onClick={toggleWindow} disabled={isDead}>Out of Bounds</button>
         </div>
 
         {/* Placeholder buttons */}
         <div className="flex flex-wrap justify-center gap-4">
-          <button className="btn" onClick={toggleEco}>Eco mode</button>
+          <button className="btn" onClick={toggleEco} disabled={isDead}>Eco mode</button>
         </div>
 
         {/* Logs */}
