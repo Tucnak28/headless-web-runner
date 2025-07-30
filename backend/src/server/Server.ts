@@ -11,10 +11,11 @@ export function startServer() {
   const app = express();
   const server = http.createServer(app);
 
-  app.use(cors({
-    origin: 'http://localhost:3000',
-    methods: ['GET', 'POST'],
-  }));
+	app.use(cors({
+	  origin: ['http://localhost:3000', 'http://localhost:3002'],
+	  methods: ['GET', 'POST'],
+	}));
+
 
   app.use(express.static("public"));
   app.use(express.json());
