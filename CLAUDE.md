@@ -6,6 +6,9 @@
 - **Install all dependencies**: `npm run install:all`
 - **Build everything**: `npm run build`
 - **Run both servers**: `npm run dev` (backend + frontend concurrently)
+- **Run all tests**: `npm test` (backend unit tests)
+- **Run tests with watch**: `npm run test:watch`
+- **Run tests with coverage**: `npm run test:coverage`
 - **Test backend startup**: `npm run test:backend` (10s timeout)
 - **Clean all builds**: `npm run clean`
 

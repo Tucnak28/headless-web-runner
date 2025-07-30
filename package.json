@@ -12,6 +12,9 @@
     "dev:backend": "cd backend && npm start",
     "dev:frontend": "cd frontend && npm run dev",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "test": "cd backend && npm test",
+    "test:watch": "cd backend && npm run test:watch",
+    "test:coverage": "cd backend && npm run test:coverage",
     "test:backend": "timeout 10s npm run dev:backend",
     "clean": "rm -rf backend/node_modules backend/build frontend/node_modules frontend/.next"
   },
