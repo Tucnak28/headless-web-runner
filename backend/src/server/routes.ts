@@ -147,7 +147,7 @@ router.post("/test_stealth/", async (req: Request, res: Response) => {
     let screenshotPath = path.join("screenshots", `bot-test1-${id}.png`);
     fs.mkdirSync("screenshots", { recursive: true });
 
-    await page.screenshot({ path: screenshotPath, fullPage: true });
+    await page.screenshot({ path: screenshotPath as `${string}.png`, fullPage: true });
 
       await page.goto("https://amiunique.org/fingerprint", {
       waitUntil: "networkidle2",
@@ -159,7 +159,7 @@ router.post("/test_stealth/", async (req: Request, res: Response) => {
     screenshotPath = path.join("screenshots", `bot-test2-${id}.png`);
     fs.mkdirSync("screenshots", { recursive: true });
 
-    await page.screenshot({ path: screenshotPath, fullPage: true });
+    await page.screenshot({ path: screenshotPath as `${string}.png`, fullPage: true });
     
 
     await bot.kill();

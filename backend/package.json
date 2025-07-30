@@ -26,7 +26,6 @@
     "@types/cors": "^2.8.18",
     "@types/express": "^5.0.1",
     "@types/node": "^22.15.17",
-    "@types/puppeteer": "^7.0.4",
     "@types/ws": "^8.18.1",
     "express": "^5.1.0",
     "typescript": "^5.8.3"

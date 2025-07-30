@@ -1,0 +1,21 @@
+{
+  "name": "headless-web-runner-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "build": "npm run build:backend && npm run build:frontend",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm start",
+    "dev:backend": "cd backend && npm start",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "test:backend": "timeout 10s npm run dev:backend",
+    "clean": "rm -rf backend/node_modules backend/build frontend/node_modules frontend/.next"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
