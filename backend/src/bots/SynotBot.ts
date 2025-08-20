@@ -41,8 +41,20 @@ export class SynotBot {
     settle3: 1,
     spin: 3,
   };
+  // Timing properties
+  private startTime: Date;
+  private endTime: Date | null = null;
+  // Scheduling properties
+  private scheduledStart: Date | null = null;
+  private scheduledEnd: Date | null = null;
+  private scheduleCheckInterval: NodeJS.Timeout | null = null;
+  // Spinning time tracking
+  private spinStartTime: Date | null = null;
+  private totalSpinTime: number = 0; // Total milliseconds spent spinning
 
-  constructor(public id: string) {}
+  constructor(public id: string) {
+    this.startTime = new Date();
+  }
 
 
 
@@ -188,11 +200,24 @@ export class SynotBot {
   }
 
   public getInfo() {
+    // Calculate current total spin time
+    let currentTotalSpinTime = this.totalSpinTime;
+    if (this.performBoolean && this.spinStartTime) {
+      currentTotalSpinTime += Date.now() - this.spinStartTime.getTime();
+    }
+    
     return {
       id: this.id,
       username: this.username,
       delay: this.delay,
       platform: this.platform,
+      startTime: this.startTime.toISOString(),
+      endTime: this.endTime ? this.endTime.toISOString() : null,
+      isAlive: this.endTime === null,
+      scheduledStart: this.scheduledStart ? this.scheduledStart.toISOString() : null,
+      scheduledEnd: this.scheduledEnd ? this.scheduledEnd.toISOString() : null,
+      isSpinning: this.performBoolean,
+      totalSpinTime: currentTotalSpinTime, // Total milliseconds spent spinning
     };
   }
 
@@ -253,6 +278,74 @@ export class SynotBot {
     this.platform = platform;
     this.addLog(`🪙 Platform set to ${platform} for bot "${this.id}"`);
   };
+  public setSchedule = (startTime: string | null, endTime: string | null) => {
+    // Clear existing schedule
+    this.clearSchedule();
+    
+    // Parse times
+    this.scheduledStart = startTime ? new Date(startTime) : null;
+    this.scheduledEnd = endTime ? new Date(endTime) : null;
+    
+    // Start schedule monitoring
+    this.startScheduleMonitoring();
+    
+    this.addLog(`📅 Schedule set: ${this.getScheduleDescription()}`);
+  };
+
+  private getScheduleDescription(): string {
+    const now = new Date();
+    const hasStart = this.scheduledStart !== null;
+    const hasEnd = this.scheduledEnd !== null;
+    
+    if (!hasStart && !hasEnd) {
+      return "Start now, run indefinitely";
+    } else if (!hasStart && hasEnd) {
+      return `Start now, stop at ${this.scheduledEnd!.toLocaleTimeString()}`;
+    } else if (hasStart && !hasEnd) {
+      return `Start at ${this.scheduledStart!.toLocaleTimeString()}, run indefinitely`;
+    } else {
+      return `Start at ${this.scheduledStart!.toLocaleTimeString()}, stop at ${this.scheduledEnd!.toLocaleTimeString()}`;
+    }
+  }
+
+  private clearSchedule() {
+    if (this.scheduleCheckInterval) {
+      clearInterval(this.scheduleCheckInterval);
+      this.scheduleCheckInterval = null;
+    }
+  }
+
+  private startScheduleMonitoring() {
+    // Check schedule every 5 seconds
+    this.scheduleCheckInterval = setInterval(() => {
+      this.checkSchedule();
+    }, 5000);
+    
+    // Also check immediately
+    this.checkSchedule();
+  }
+
+  private checkSchedule() {
+    const now = new Date();
+    const hasStart = this.scheduledStart !== null;
+    const hasEnd = this.scheduledEnd !== null;
+    
+    // Check if we should start spinning
+    if (!this.performBoolean) {
+      const shouldStart = !hasStart || now >= this.scheduledStart!;
+      if (shouldStart) {
+        this.addLog(`⏰ Starting scheduled spin session`);
+        this.toggleSpin();
+      }
+    }
+    
+    // Check if we should stop spinning
+    if (this.performBoolean && hasEnd && now >= this.scheduledEnd!) {
+      this.addLog(`⏰ Stopping scheduled spin session`);
+      this.toggleSpin();
+      this.clearSchedule(); // Stop monitoring after end time
+    }
+  }
 
   private async dynamicWait(label: keyof typeof this.delayWeights) {
     const totalWeight = Object.values(this.delayWeights).reduce(
@@ -266,7 +359,20 @@ export class SynotBot {
   }
 
   public toggleSpin() {
+    const wasSpinning = this.performBoolean;
     this.performBoolean = !this.performBoolean;
+
+    // Track spin time
+    if (this.performBoolean && !wasSpinning) {
+      // Starting to spin
+      this.spinStartTime = new Date();
+    } else if (!this.performBoolean && wasSpinning) {
+      // Stopping spin
+      if (this.spinStartTime) {
+        this.totalSpinTime += Date.now() - this.spinStartTime.getTime();
+        this.spinStartTime = null;
+      }
+    }
 
     if (this.performBoolean) {
       if (!this.spinLoopPromise) {
@@ -349,6 +455,18 @@ export class SynotBot {
 
   public async kill() {
     this.addLog("💀 Killing bot...");
+    
+    // Set end time
+    this.endTime = new Date();
+    
+    // Stop spin timer if running
+    if (this.performBoolean && this.spinStartTime) {
+      this.totalSpinTime += Date.now() - this.spinStartTime.getTime();
+      this.spinStartTime = null;
+    }
+    
+    // Clear schedule
+    this.clearSchedule();
 
     //Stop spinning
     this.performBoolean = false;

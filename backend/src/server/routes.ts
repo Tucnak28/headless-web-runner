@@ -105,7 +105,26 @@ router.post("/apply_settings/:id", async (req: Request, res: Response): Promise<
   res.send(`🪟 Set login info of "${id}"`);
 });
 
+// Set schedule
+router.post("/set_schedule/:id", (req: Request, res: Response): void => {
+  const { id } = req.params;
+  const { startTime, endTime } = req.body;
+  const bot = botManager.getBot(id);
 
+  if (!bot) {
+    res.status(404).send(`❌ Bot "${id}" not found`);
+    return;
+  }
+
+  bot.setSchedule(startTime || null, endTime || null);
+  
+  broadcastToClients({
+    type: "botList",
+    bots: botManager.getAllBotInfo(),
+  });
+  
+  res.send(`📅 Schedule set for bot "${id}"`);
+});
 
 // kill bot
 router.post("/kill_Bot/:id", async (req, res) => {
