@@ -10,6 +10,10 @@
 - Provides real-time monitoring and control through a web interface
 - Implements advanced stealth and anti-detection techniques
 
+## Development Workflow Notes
+
+- I am always running npm run dev, so claude doesn't have to do it itself.
+
 ## Architecture Overview
 
 ### **Backend** (`/backend/`)
@@ -181,6 +185,10 @@ This project is designed to run across **3 different environments**:
 - **NEVER** add Co-Authored-By lines to commits
 - Keep commit messages concise and descriptive
 - Follow existing commit style (short imperative messages)
+
+## Memories
+
+- Use the Puppeteer MCP for the project
 
 ## Security & Anti-Detection
 
