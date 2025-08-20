@@ -9,6 +9,21 @@ import { SynotBot } from '../bots/SynotBot';
 // Mock dependencies
 jest.mock('../bots/SynotBot');
 
+// Helper function to create mock bot info
+const createMockBotInfo = (platform: string) => ({
+  id: 'bot1',
+  username: 'test',
+  delay: 5,
+  platform,
+  startTime: new Date().toISOString(),
+  endTime: null,
+  isAlive: true,
+  scheduledStart: null,
+  scheduledEnd: null,
+  isSpinning: false,
+  totalSpinTime: 0,
+});
+
 describe('gameActions', () => {
   describe('wait', () => {
     it('should wait for specified milliseconds', async () => {
@@ -41,12 +56,7 @@ describe('gameActions', () => {
     });
 
     it('should return a Synottip game URL for Synottip platform', () => {
-      mockBot.getInfo.mockReturnValue({
-        id: 'bot1',
-        username: 'test',
-        delay: 5,
-        platform: 'Synottip'
-      });
+      mockBot.getInfo.mockReturnValue(createMockBotInfo('Synottip'));
 
       const gameUrl = pickRandomGame(mockBot);
       
@@ -55,12 +65,7 @@ describe('gameActions', () => {
     });
 
     it('should return a Gapa game URL for Gapa platform', () => {
-      mockBot.getInfo.mockReturnValue({
-        id: 'bot1',
-        username: 'test',
-        delay: 5,
-        platform: 'Gapa'
-      });
+      mockBot.getInfo.mockReturnValue(createMockBotInfo('Gapa'));
 
       const gameUrl = pickRandomGame(mockBot);
       
@@ -69,12 +74,7 @@ describe('gameActions', () => {
     });
 
     it('should return a Fbet game URL for Fbet platform', () => {
-      mockBot.getInfo.mockReturnValue({
-        id: 'bot1',
-        username: 'test',
-        delay: 5,
-        platform: 'Fbet'
-      });
+      mockBot.getInfo.mockReturnValue(createMockBotInfo('Fbet'));
 
       const gameUrl = pickRandomGame(mockBot);
       
@@ -83,12 +83,7 @@ describe('gameActions', () => {
     });
 
     it('should return a Forbes game URL for Forbes platform', () => {
-      mockBot.getInfo.mockReturnValue({
-        id: 'bot1',
-        username: 'test',
-        delay: 5,
-        platform: 'Forbes'
-      });
+      mockBot.getInfo.mockReturnValue(createMockBotInfo('Forbes'));
 
       const gameUrl = pickRandomGame(mockBot);
       
@@ -97,34 +92,19 @@ describe('gameActions', () => {
     });
 
     it('should throw error for unknown platform', () => {
-      mockBot.getInfo.mockReturnValue({
-        id: 'bot1',
-        username: 'test',
-        delay: 5,
-        platform: 'UnknownPlatform'
-      });
+      mockBot.getInfo.mockReturnValue(createMockBotInfo('UnknownPlatform'));
 
       expect(() => pickRandomGame(mockBot)).toThrow('No games found for platform "UnknownPlatform"');
     });
 
     it('should throw error for empty platform', () => {
-      mockBot.getInfo.mockReturnValue({
-        id: 'bot1',
-        username: 'test',
-        delay: 5,
-        platform: ''
-      });
+      mockBot.getInfo.mockReturnValue(createMockBotInfo(''));
 
       expect(() => pickRandomGame(mockBot)).toThrow('No games found for platform ""');
     });
 
     it('should return different URLs on multiple calls (randomness)', () => {
-      mockBot.getInfo.mockReturnValue({
-        id: 'bot1',
-        username: 'test',
-        delay: 5,
-        platform: 'Synottip'
-      });
+      mockBot.getInfo.mockReturnValue(createMockBotInfo('Synottip'));
 
       const urls = new Set();
       // Call multiple times to test randomness
